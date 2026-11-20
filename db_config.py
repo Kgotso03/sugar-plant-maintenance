@@ -1,19 +1,11 @@
 """
 db_config.py — Cloud Database Configuration.
 
-Vercel is serverless, so SQLite in /tmp/ gets wiped whenever the server sleeps.
-To keep your data permanently, paste a free cloud PostgreSQL or MySQL connection string below.
+Configured with your Supabase PostgreSQL cloud database.
 """
 
 # ==============================================================================
-# PERMANENT CLOUD DATABASE CONNECTION STRING
+# PERMANENT CLOUD DATABASE CONNECTION STRING (Supabase)
 # ==============================================================================
-# Examples:
-#   Neon (recommended, 100% free):
-#   CLOUD_DATABASE_URI = "postgresql://neondb_owner:npg_xxxx@ep-cool-pond-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require"
-#
-#   Supabase (free PostgreSQL):
-#   CLOUD_DATABASE_URI = "postgresql://postgres:YourPassword@db.xxxx.supabase.co:5432/postgres"
-# ==============================================================================
-
-CLOUD_DATABASE_URI = ""
+# Password '@' and '%' are URL-encoded as %40 and %25 for RFC-3986 URI standard:
+CLOUD_DATABASE_URI = "postgresql://postgres:Sugarplant%40%25123@db.koefkhwxtbzzyapruqgq.supabase.co:5432/postgres"

@@ -33,8 +33,27 @@ def create_app(config_name=None):
         cloud_uri = ""
 
     db_uri = cloud_uri or os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
-    if db_uri and db_uri.startswith("postgres://"):
-        db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+
+    # Normalize PostgreSQL URI to use psycopg2 driver and handle special characters in password
+    if db_uri:
+        if db_uri.startswith("postgres://"):
+            db_uri = db_uri.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif db_uri.startswith("postgresql://") and not db_uri.startswith("postgresql+"):
+            db_uri = db_uri.replace("postgresql://", "postgresql+psycopg2://", 1)
+        # Handle unescaped '@' characters in database password
+        try:
+            import urllib.parse
+            if "://" in db_uri and db_uri.count("@") > 1:
+                scheme, rest = db_uri.split("://", 1)
+                last_at_idx = rest.rfind("@")
+                user_pass = rest[:last_at_idx]
+                host_db = rest[last_at_idx + 1:]
+                if ":" in user_pass:
+                    user, password = user_pass.split(":", 1)
+                    encoded_pw = urllib.parse.quote_plus(password)
+                    db_uri = f"{scheme}://{user}:{encoded_pw}@{host_db}"
+        except Exception:
+            pass
 
     if not db_uri or (is_vercel and "127.0.0.1" in db_uri):
         if is_vercel:
