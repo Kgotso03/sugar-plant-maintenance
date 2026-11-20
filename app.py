@@ -25,7 +25,14 @@ def create_app(config_name=None):
     # ── Core configuration ──────────────────────────────────────────────────
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-sugar-plant-secret-key-2026")
     is_vercel = bool(os.environ.get("VERCEL"))
-    db_uri = os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
+
+    try:
+        import db_config
+        cloud_uri = getattr(db_config, "CLOUD_DATABASE_URI", "").strip()
+    except Exception:
+        cloud_uri = ""
+
+    db_uri = cloud_uri or os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
     if db_uri and db_uri.startswith("postgres://"):
         db_uri = db_uri.replace("postgres://", "postgresql://", 1)
 
