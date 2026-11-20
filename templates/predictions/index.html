@@ -65,38 +65,40 @@
       <h3 class="card-title">&#x1F9E9; Confusion Matrix</h3>
       <span style="font-size:0.75rem; color:var(--text-muted);">Rows: True | Cols: Pred</span>
     </div>
-    <table class="table" style="text-align: center; font-size: 0.8rem;">
-      <thead>
-        <tr>
-          <th>Class</th>
-          <th>Pred Low</th>
-          <th>Pred Med</th>
-          <th>Pred High</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if metrics.confusion_matrix %}
-        <tr>
-          <td style="font-weight:600; text-align: left;">True Low</td>
-          <td style="background:#f0fdf4; font-weight:700;">{{ metrics.confusion_matrix[0][0] }}</td>
-          <td>{{ metrics.confusion_matrix[0][1] }}</td>
-          <td>{{ metrics.confusion_matrix[0][2] }}</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600; text-align: left;">True Med</td>
-          <td>{{ metrics.confusion_matrix[1][0] }}</td>
-          <td style="background:#fefce8; font-weight:700;">{{ metrics.confusion_matrix[1][1] }}</td>
-          <td>{{ metrics.confusion_matrix[1][2] }}</td>
-        </tr>
-        <tr>
-          <td style="font-weight:600; text-align: left;">True High</td>
-          <td>{{ metrics.confusion_matrix[2][0] }}</td>
-          <td>{{ metrics.confusion_matrix[2][1] }}</td>
-          <td style="background:#fef2f2; font-weight:700; color:var(--danger);">{{ metrics.confusion_matrix[2][2] }}</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="table" style="text-align: center; font-size: 0.8rem;">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th>Pred Low</th>
+            <th>Pred Med</th>
+            <th>Pred High</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if metrics.confusion_matrix %}
+          <tr>
+            <td style="font-weight:600; text-align: left;">True Low</td>
+            <td style="background:#f0fdf4; font-weight:700;">{{ metrics.confusion_matrix[0][0] }}</td>
+            <td>{{ metrics.confusion_matrix[0][1] }}</td>
+            <td>{{ metrics.confusion_matrix[0][2] }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; text-align: left;">True Med</td>
+            <td>{{ metrics.confusion_matrix[1][0] }}</td>
+            <td style="background:#fefce8; font-weight:700;">{{ metrics.confusion_matrix[1][1] }}</td>
+            <td>{{ metrics.confusion_matrix[1][2] }}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; text-align: left;">True High</td>
+            <td>{{ metrics.confusion_matrix[2][0] }}</td>
+            <td>{{ metrics.confusion_matrix[2][1] }}</td>
+            <td style="background:#fef2f2; font-weight:700; color:var(--danger);">{{ metrics.confusion_matrix[2][2] }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Feature Importances -->

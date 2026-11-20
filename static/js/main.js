@@ -11,15 +11,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const mainWrapper = document.querySelector(".main-wrapper");
 
   if (menuToggle && sidebar) {
-    // Restore saved desktop collapsed state
-    if (window.innerWidth > 900 && localStorage.getItem("sidebar_collapsed") === "1") {
+    // Restore saved desktop collapsed state for wide monitors
+    if (window.innerWidth > 1024 && localStorage.getItem("sidebar_collapsed") === "1") {
       sidebar.classList.add("collapsed");
       if (mainWrapper) mainWrapper.classList.add("expanded");
     }
 
     menuToggle.addEventListener("click", function () {
-      if (window.innerWidth <= 900) {
-        // Mobile drawer toggle
+      if (window.innerWidth <= 1024) {
+        // Mobile / Tablet drawer toggle
         sidebar.classList.toggle("open");
         if (overlay) overlay.classList.toggle("active");
       } else {
@@ -46,10 +46,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // Auto-close drawer on mobile when clicking any navigation link
+    // Auto-close drawer on mobile/tablet when clicking any navigation link
     sidebar.querySelectorAll(".nav-item").forEach(function (link) {
       link.addEventListener("click", function () {
-        if (window.innerWidth <= 900) {
+        if (window.innerWidth <= 1024) {
           sidebar.classList.remove("open");
           if (overlay) overlay.classList.remove("active");
         }
