@@ -51,6 +51,12 @@
   padding: 0;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--bg-app);
@@ -63,6 +69,9 @@ body {
 .app-wrapper {
   display: flex;
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* Sidebar */
@@ -229,6 +238,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
+  width: 100%;
+  min-width: 0;
   transition: margin-left 0.25s ease-in-out;
 }
 
@@ -302,6 +315,14 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+.sim-text-desktop {
+  display: inline;
+}
+
+.sim-text-mobile {
+  display: none;
 }
 
 .sim-running {
@@ -450,7 +471,13 @@ body {
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.stat-content {
+  min-width: 0;
+  flex: 1;
 }
 
 .stat-icon {
@@ -461,6 +488,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.35rem;
+  flex-shrink: 0;
 }
 
 .stat-value {
@@ -470,11 +498,12 @@ body {
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   color: var(--text-muted);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
+  word-break: break-word;
 }
 
 /* Status Badges */
@@ -738,30 +767,38 @@ body {
   }
 
   .content-container {
-    padding: 0.85rem 0.75rem;
+    padding: 0.85rem 0.65rem;
   }
 
   .top-navbar {
     padding: 0 0.75rem;
-    height: auto;
+    height: 56px;
     min-height: 56px;
     gap: 0.5rem;
   }
 
   .top-nav-brand-text {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--navy-dark);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
-    display: inline-block;
+    display: none !important;
+  }
+
+  .top-nav-studio-btn {
+    display: none !important;
+  }
+
+  .sim-text-desktop {
+    display: none !important;
+  }
+
+  .sim-text-mobile {
+    display: inline !important;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
   }
 
   .sim-live-indicator {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.72rem;
+    padding: 0.25rem 0.55rem;
     gap: 0.35rem;
     white-space: nowrap;
   }
@@ -769,15 +806,15 @@ body {
   /* Responsive Grids */
   .grid-cols-4 {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.65rem;
+    margin-bottom: 0.85rem;
   }
 
   .grid-cols-3,
   .grid-cols-2 {
     grid-template-columns: 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
   }
 
   .grid-cols-3 > *,
@@ -801,6 +838,7 @@ body {
     align-items: stretch;
     gap: 0.6rem;
     padding: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .filter-bar > * {
@@ -811,15 +849,15 @@ body {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
   }
 
   .page-header > div:last-child {
     width: 100%;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.4rem;
     justify-content: flex-start;
   }
 
@@ -829,7 +867,13 @@ body {
   }
 
   .page-title {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
+    line-height: 1.3;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem;
+    line-height: 1.35;
   }
 
   /* Prevent iOS 16px auto-zoom & optimize mobile touch controls */
@@ -847,7 +891,7 @@ body {
 
   .btn {
     min-height: 40px;
-    padding: 0.5rem 0.85rem;
+    padding: 0.45rem 0.8rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -855,25 +899,39 @@ body {
   }
 
   .card {
-    padding: 1rem;
+    padding: 0.85rem;
     border-radius: var(--radius-sm);
+    margin-bottom: 0.85rem;
   }
 
-  /* Tables with smooth horizontal touch-scrolling */
+  .card-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .card-title {
+    font-size: 0.95rem;
+  }
+
+  /* Tables with smooth horizontal touch-scrolling and visual scroll cue */
   .table-responsive {
     width: 100%;
+    max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-light);
     margin-bottom: 1rem;
+    background: #fff;
+    box-shadow: inset -5px 0 6px -4px rgba(0, 0, 0, 0.12);
   }
 
   .table th,
   .table td {
     padding: 0.55rem 0.65rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     white-space: nowrap;
+    vertical-align: middle;
   }
 
   /* Modal & Card responsiveness */
@@ -886,40 +944,34 @@ body {
 /* ── Smartphones & Compact Mobile (<= 480px) ────────────────────────────── */
 @media (max-width: 480px) {
   .content-container {
-    padding: 0.65rem 0.45rem;
+    padding: 0.5rem 0.4rem;
   }
 
   .top-navbar {
     padding: 0 0.5rem;
-  }
-
-  .top-nav-brand-text {
-    display: none; /* Icon and menu button provide branding on small mobile */
+    height: 52px;
+    min-height: 52px;
   }
 
   .top-nav-right {
     gap: 0.35rem;
   }
 
-  .top-nav-right .btn {
-    padding: 0.35rem 0.6rem;
-    font-size: 0.75rem;
-  }
-
   .grid-cols-4 {
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .stat-card {
-    padding: 0.65rem 0.45rem;
+    padding: 0.6rem 0.45rem;
     gap: 0.45rem;
   }
 
   .stat-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+    border-radius: var(--radius-sm);
   }
 
   .stat-value {
@@ -927,17 +979,18 @@ body {
   }
 
   .stat-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
+    line-height: 1.2;
   }
 
   .card-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .card-title {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
   }
 
   .login-card {
@@ -949,7 +1002,7 @@ body {
 @media (max-width: 360px) {
   .grid-cols-4 {
     grid-template-columns: 1fr;
-    gap: 0.5rem;
+    gap: 0.45rem;
   }
 
   .sim-live-indicator {

@@ -13,7 +13,7 @@
   <title>{% block title %}Dashboard{% endblock %} - Sugar Plant Predictive Maintenance</title>
   
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.2">
   
   <!-- Chart.js 4.4.8 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
@@ -140,7 +140,7 @@
           {% set sim = simulator.get_status() %}
           <div class="sim-live-indicator {% if sim.is_running and not sim.is_paused %}sim-running{% elif sim.is_paused %}sim-paused{% else %}sim-stopped{% endif %}">
             <span class="pulse-dot"></span>
-            <span>
+            <span class="sim-text-desktop">
               {% if sim.is_running and not sim.is_paused %}
                 SIM LIVE: {{ sim.scenario_label }} ({{ sim.speed_factor }}x)
               {% elif sim.is_paused %}
@@ -149,10 +149,19 @@
                 SIM IDLE
               {% endif %}
             </span>
+            <span class="sim-text-mobile">
+              {% if sim.is_running and not sim.is_paused %}
+                LIVE
+              {% elif sim.is_paused %}
+                PAUSED
+              {% else %}
+                IDLE
+              {% endif %}
+            </span>
           </div>
 
-          <a href="{{ url_for('simulation.index') }}" class="btn btn-sm btn-secondary">
-            <span>&#x2699; Sim Studio</span>
+          <a href="{{ url_for('simulation.index') }}" class="btn btn-sm btn-secondary top-nav-studio-btn">
+            <span>&#x2699; Studio</span>
           </a>
         </div>
       </header>
