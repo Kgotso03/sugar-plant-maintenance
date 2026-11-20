@@ -38,6 +38,35 @@ class NotificationLog(db.Model):
 
     user = db.relationship("User", back_populates="notifications")
 
+    def __init__(
+        self,
+        user_id=None,
+        recipient_email=None,
+        recipient_phone=None,
+        channel=CHANNEL_EMAIL,
+        category=CATEGORY_SYSTEM,
+        title="",
+        message="",
+        status=STATUS_SENT,
+        error_message=None,
+        is_read=False,
+        created_at=None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.user_id = user_id
+        self.recipient_email = recipient_email
+        self.recipient_phone = recipient_phone
+        self.channel = channel
+        self.category = category
+        self.title = title
+        self.message = message
+        self.status = status
+        self.error_message = error_message
+        self.is_read = is_read
+        if created_at is not None:
+            self.created_at = created_at
+
     def to_dict(self):
         return {
             "id": self.id,
