@@ -129,12 +129,20 @@ def test_rbac_access_control(client):
     # Redirected to dashboard due to insufficient permissions
     assert b"Access denied: You do not have permission" in res.data
 
-    # Admin CAN access user management
+    # Technician should not be allowed to access settings & audit (Admin only)
+    res_settings = client.get("/settings", follow_redirects=True)
+    assert res_settings.status_code == 200
+    assert b"Access denied: You do not have permission" in res_settings.data
+
+    # Admin CAN access user management and settings
     client.get("/logout")
     client.post("/login", data={"username": "test_admin", "password": "AdminPass123!"}, follow_redirects=True)
     res = client.get("/users")
     assert res.status_code == 200
     assert b"User & Role Management" in res.data
+
+    res_admin_settings = client.get("/settings")
+    assert res_admin_settings.status_code == 200
 
 
 # ── 3. Equipment Registration & Editing ──────────────────────────────────────

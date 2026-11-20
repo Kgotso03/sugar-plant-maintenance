@@ -13,6 +13,7 @@ settings_bp = Blueprint("settings", __name__)
 
 @settings_bp.route("/settings")
 @login_required
+@roles_required(User.ROLE_ADMIN)
 def index():
     audit_logs = AuditLog.query.order_by(AuditLog.created_at.desc()).limit(100).all()
     sim_status = simulator.get_status()

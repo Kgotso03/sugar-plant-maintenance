@@ -99,19 +99,19 @@
           <span class="nav-icon">&#x1F465;</span>
           <span>User Management</span>
         </a>
+        <a href="{{ url_for('settings.index') }}" class="nav-item {% if 'settings' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">&#x2699;</span>
+          <span>Settings & Audit</span>
+        </a>
         {% endif %}
 
-        <div class="nav-section-title">System</div>
+        <div class="nav-section-title">System & Alerts</div>
         <a href="{{ url_for('notifications.index') }}" class="nav-item {% if request.endpoint and 'notifications' in request.endpoint %}active{% endif %}">
           <span class="nav-icon">&#x1F514;</span>
           <span>Notifications</span>
           {% if current_user %}
           <span id="sidebar-notif-badge" style="display:none;background:var(--danger);color:#fff;border-radius:9px;font-size:0.68rem;font-weight:700;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center;"></span>
           {% endif %}
-        </a>
-        <a href="{{ url_for('settings.index') }}" class="nav-item {% if 'settings' in request.endpoint %}active{% endif %}">
-          <span class="nav-icon">&#x2699;</span>
-          <span>Settings & Audit</span>
         </a>
       </nav>
 
