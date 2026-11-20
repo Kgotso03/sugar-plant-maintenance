@@ -18,7 +18,11 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        user = User.query.filter((User.username == username) | (User.email == username)).first()
+        try:
+            user = User.query.filter((User.username == username) | (User.email == username)).first()
+        except Exception as e:
+            flash(f"Database connection error: Unable to reach database ({e}). Please verify your database settings.", "danger")
+            return render_template("auth/login.html", username=username)
 
         if user and user.check_password(password):
             if not user.is_active:

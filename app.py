@@ -24,16 +24,31 @@ def create_app(config_name=None):
 
     # ── Core configuration ──────────────────────────────────────────────────
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-sugar-plant-secret-key-2026")
+    is_vercel = bool(os.environ.get("VERCEL"))
     db_uri = os.environ.get("SQLALCHEMY_DATABASE_URI") or os.environ.get("DATABASE_URL")
     if db_uri and db_uri.startswith("postgres://"):
         db_uri = db_uri.replace("postgres://", "postgresql://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri or "mysql+pymysql://root:@127.0.0.1:3306/sugar_plant_maintenance"
+
+    if not db_uri or (is_vercel and "127.0.0.1" in db_uri):
+        if is_vercel:
+            # Serverless fallback if custom cloud database is not yet configured
+            db_uri = "sqlite:////tmp/sugar_plant.db"
+        else:
+            db_uri = "mysql+pymysql://root:@127.0.0.1:3306/sugar_plant_maintenance"
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True,
-        "pool_recycle": 280,
-    }
+
+    if "sqlite" in db_uri:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"check_same_thread": False},
+        }
+    else:
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "pool_pre_ping": True,
+            "pool_recycle": 280,
+        }
 
     if config_name == "testing":
         from sqlalchemy.pool import StaticPool
@@ -111,6 +126,22 @@ def create_app(config_name=None):
                 503,
                 {"Content-Type": "application/json"},
             )
+
+    # ── Error Handlers ──────────────────────────────────────────────────────
+    @app.errorhandler(500)
+    def handle_500(e):
+        return render_template("auth/login.html", error=f"Server Error: {e}"), 500
+
+    # ── Auto-initialize tables & default admin ──────────────────────────────
+    if not app.config.get("TESTING"):
+        with app.app_context():
+            try:
+                db.create_all()
+                if not User.query.filter_by(username="admin").first():
+                    from database.seed_data import seed_database
+                    seed_database(app)
+            except Exception as e:
+                app.logger.warning(f"Database auto-init notice: {e}")
 
     return app
 
