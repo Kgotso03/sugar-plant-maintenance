@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Simulation Studio{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x2699;&#xFE0E; Simulation Studio & Telemetry Generator</h1>
+    <p class="page-subtitle">Synthetic factory telemetry engine supporting 12 industrial fault modes</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <button id="btnStepOnce" class="btn btn-secondary btn-sm" onclick="triggerStep()">
+      &#x25B6;| Step Once
+    </button>
+  </div>
+</div>
+
+<!-- Simulation Control Console -->
+<div class="grid-cols-3">
+  <!-- Control Actions Card -->
+  <div class="card" style="grid-column: span 2;">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F39A; Simulation Parameters</h3>
+      <span id="simStateBadge" class="badge {% if sim_status.is_running and not sim_status.is_paused %}badge-running{% elif sim_status.is_paused %}badge-warning{% else %}badge-stopped{% endif %}">
+        {% if sim_status.is_running and not sim_status.is_paused %}RUNNING{% elif sim_status.is_paused %}PAUSED{% else %}STOPPED{% endif %}
+      </span>
+    </div>
+
+    <form id="simForm" onsubmit="event.preventDefault(); startSimulation();">
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label class="form-label" for="simScenario">Operational Scenario / Fault Mode *</label>
+          <select id="simScenario" class="form-control" style="font-weight: 600;">
+            {% for code, name in scenarios.items() %}
+              <option value="{{ code }}" {% if sim_status.scenario == code %}selected{% endif %}>{{ loop.index }}. {{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label" for="simTargetEquip">Target Machinery</label>
+          <select id="simTargetEquip" class="form-control">
+            <option value="">All Factory Assets (Full Plant)</option>
+            {% for eq in equipment_list %}
+              <option value="{{ eq.id }}" {% if sim_status.selected_equipment_id == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row" style="align-items: center; margin-top: 0.5rem;">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label" for="simSpeed">Simulation Frequency Speed: <span id="speedDisplay" style="color:var(--primary); font-weight:700;">{{ sim_status.speed_factor }}x</span></label>
+          <input type="range" id="simSpeed" class="form-control" min="0.5" max="5.0" step="0.5" value="{{ sim_status.speed_factor }}" oninput="document.getElementById('speedDisplay').innerText = this.value + 'x';">
+        </div>
+
+        <div style="flex: 1; display: flex; gap: 0.5rem; justify-content: flex-end; align-self: flex-end; margin-bottom: 1rem;">
+          <button type="submit" id="btnStart" class="btn btn-success" style="padding: 0.55rem 1.1rem;">
+            &#x25B6; Start Simulation
+          </button>
+          <button type="button" id="btnPause" class="btn btn-warning" onclick="pauseSimulation()">
+            &#x23F8; Pause
+          </button>
+          <button type="button" id="btnResume" class="btn btn-primary" onclick="resumeSimulation()">
+            &#x25B6; Resume
+          </button>
+          <button type="button" id="btnStop" class="btn btn-danger" onclick="stopSimulation()">
+            &#x25A0; Stop
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- State & Safety Notice Card -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x2139; Simulation Engine State</h3>
+    </div>
+    <div style="font-size: 0.85rem; line-height: 1.6;">
+      <div style="margin-bottom: 0.5rem;">
+        <span style="color: var(--text-muted);">Current Run ID:</span>
+        <strong id="dispRunId">#{{ sim_status.current_run_id or 'None' }}</strong>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <span style="color: var(--text-muted);">Total Ticks Emitted:</span>
+        <strong id="dispStepCount">{{ sim_status.step_count }}</strong>
+      </div>
+      <div style="margin-bottom: 0.75rem;">
+        <span style="color: var(--text-muted);">Active Mode:</span>
+        <div id="dispScenario" style="font-weight: 600; color: var(--navy-dark); font-size: 0.8rem;">
+          {{ sim_status.scenario_label }}
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border-light); padding: 0.65rem; border-radius: var(--radius-sm); font-size: 0.75rem; color: #475569;">
+        <strong>Safety Advisory:</strong> Synthetic streams are generated according to mathematical vibration models and thermodynamic boiler limits. Real physical machinery control requires qualified engineering oversight.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Live Telemetry Stream Streamed to MySQL -->
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x1F4CA; Live Generated Sensor Telemetry (Stored in MySQL)</h3>
+    <span class="badge badge-normal">SYNTHETIC TELEMETRY</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Asset</th>
+          <th>Sensor Channel</th>
+          <th>Synthesized Reading</th>
+          <th>Unit</th>
+          <th>Condition Status</th>
+        </tr>
+      </thead>
+      <tbody id="telemetryStreamBody">
+        <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Awaiting simulation ticks...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let simPoller = null;
+
+  async function updateSimStatus() {
+    try {
+      const res = await fetch('/api/simulation/status');
+      if (res.ok) {
+        const data = await res.json();
+        const st = data.status;
+
+        document.getElementById('dispRunId').innerText = st.current_run_id ? `#${st.current_run_id}` : 'None';
+        document.getElementById('dispStepCount').innerText = st.step_count;
+        document.getElementById('dispScenario').innerText = st.scenario_label;
+
+        const badge = document.getElementById('simStateBadge');
+        if (st.is_running && !st.is_paused) {
+          badge.className = 'badge badge-running';
+          badge.innerText = 'RUNNING';
+        } else if (st.is_paused) {
+          badge.className = 'badge badge-warning';
+          badge.innerText = 'PAUSED';
+        } else {
+          badge.className = 'badge badge-stopped';
+          badge.innerText = 'STOPPED';
+        }
+
+        // Populate recent telemetry table
+        if (data.recent_readings && data.recent_readings.length > 0) {
+          const tbody = document.getElementById('telemetryStreamBody');
+          tbody.innerHTML = data.recent_readings.map(r => `
+            <tr>
+              <td>${new Date(r.recorded_at).toLocaleTimeString()}</td>
+              <td><strong>${r.equipment_tag}</strong></td>
+              <td>${r.sensor_type}</td>
+              <td style="font-weight:700;">${r.value}</td>
+              <td>${r.unit}</td>
+              <td><span class="badge badge-${r.status}">${r.status}</span></td>
+            </tr>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function startSimulation() {
+    const sc = document.getElementById('simScenario').value;
+    const speed = document.getElementById('simSpeed').value;
+    const eq = document.getElementById('simTargetEquip').value;
+
+    await fetch('/api/simulation/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario: sc, speed_factor: speed, equipment_id: eq })
+    });
+    updateSimStatus();
+  }
+
+  async function pauseSimulation() {
+    await fetch('/api/simulation/pause', { method: 'POST' });
+    updateSimStatus();
+  }
+
+  async function resumeSimulation() {
+    await fetch('/api/simulation/resume', { method: 'POST' });
+    updateSimStatus();
+  }
+
+  async function stopSimulation() {
+    await fetch('/api/simulation/stop', { method: 'POST' });
+    updateSimStatus();
+  }
+
+  async function triggerStep() {
+    await fetch('/api/simulation/step', { method: 'POST' });
+    updateSimStatus();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    updateSimStatus();
+    simPoller = setInterval(updateSimStatus, 2000);
+  });
+</script>
+{% endblock %}

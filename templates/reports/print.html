@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Factory Operations Maintenance Report - Sugar Plant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20mm;
+      color: #1e293b;
+      font-size: 11pt;
+    }
+    .header {
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    h1 { margin: 0; font-size: 18pt; color: #0b1329; }
+    .meta { font-size: 9pt; color: #64748b; }
+    .section-title {
+      font-size: 13pt;
+      font-weight: bold;
+      margin-top: 25px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 4px;
+      color: #1e293b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+      font-size: 9.5pt;
+    }
+    th {
+      background: #f1f5f9;
+      text-align: left;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      font-weight: 600;
+    }
+    td {
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .notice {
+      background-color: #fffbeb;
+      border: 1px solid #fcd34d;
+      padding: 8px 12px;
+      font-size: 8.5pt;
+      color: #92400e;
+      margin-bottom: 20px;
+    }
+    @media print {
+      body { margin: 10mm; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="margin-bottom: 15px;">
+    <button onclick="window.print()" style="padding: 8px 16px; background:#2563eb; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">
+      &#x1F5B6; Print / Save as PDF
+    </button>
+  </div>
+
+  <div class="header">
+    <div>
+      <h1>Sugar Refinery Plant Maintenance Audit Report</h1>
+      <div class="meta">Asset Reliability & Condition Monitoring Intelligence</div>
+    </div>
+    <div class="meta" style="text-align: right;">
+      <div>Generated: {{ generated_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+      <div>Scope: Plant-Wide Systems</div>
+    </div>
+  </div>
+
+  <div class="notice">
+    <strong>SIMULATION AUDIT NOTICE:</strong> Telemetry values, synthetic alerts, and AI failure risk forecasts displayed in this report are simulated for engineering demonstration and training purposes.
+  </div>
+
+  <div class="section-title">1. Equipment Asset Health Roster</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Tag</th>
+        <th>Asset Name</th>
+        <th>Type</th>
+        <th>Plant Area</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for eq in equipment_list %}
+      <tr>
+        <td><strong>{{ eq.equipment_tag }}</strong></td>
+        <td>{{ eq.name }}</td>
+        <td>{{ eq.equipment_type }}</td>
+        <td>{{ eq.plant_area.name if eq.plant_area else '-' }}</td>
+        <td>{{ eq.operating_status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="section-title">2. Active Threshold Breaches & Fault Alerts</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Machinery</th>
+        <th>Severity</th>
+        <th>Sensor</th>
+        <th>Observed</th>
+        <th>Limit</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in alerts %}
+      <tr>
+        <td>{{ a.last_occurred_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ a.equipment.equipment_tag }}</td>
+        <td><strong>{{ a.severity|upper }}</strong></td>
+        <td>{{ a.sensor_type }}</td>
+        <td>{{ a.observed_value }}</td>
+        <td>{{ a.configured_limit }}</td>
+        <td>{{ a.status }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">No alerts on record.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="section-title">3. Recent Work Orders & Interventions</div>
+  <table>
+    <thead>
+      <tr>
+        <th>WO #</th>
+        <th>Asset</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Labor</th>
+        <th>Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for w in work_orders %}
+      <tr>
+        <td><strong>{{ w.work_order_number }}</strong></td>
+        <td>{{ w.equipment.equipment_tag }}</td>
+        <td>{{ w.title }}</td>
+        <td>{{ w.priority }}</td>
+        <td>{{ w.status }}</td>
+        <td>{{ w.labor_hours }}h</td>
+        <td>${{ w.maintenance_cost }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">No work orders recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="section-title">4. Machine Learning Failure Risk Forecasts</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Asset</th>
+        <th>Risk Level</th>
+        <th>Failure Probability</th>
+        <th>Recommended Inspection Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in predictions %}
+      <tr>
+        <td>{{ p.prediction_time.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>{{ p.equipment.equipment_tag }}</td>
+        <td><strong>{{ p.risk_category|upper }}</strong></td>
+        <td>{{ "%.1f"|format(p.risk_score * 100) }}%</td>
+        <td>{{ p.recommended_action }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No predictions available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
+

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Create Work Order{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Issue Maintenance Work Order</h1>
+    <p class="page-subtitle">Assign corrective or scheduled maintenance to engineering technicians</p>
+  </div>
+  <a href="{{ url_for('maintenance.work_orders') }}" class="btn btn-secondary">&larr; Back to Work Orders</a>
+</div>
+
+<div class="card" style="max-width: 780px;">
+  <form method="POST">
+    {% if prefill_alert %}
+      <input type="hidden" name="alert_id" value="{{ prefill_alert }}">
+      <div class="simulation-notice-banner" style="background:#fef2f2; border-left-color:#ef4444; color:#991b1b; margin-bottom:1rem;">
+        Linked to Fault Alert #{{ prefill_alert }}. Resolving this work order will complete the audit trail for this alert.
+      </div>
+    {% endif %}
+
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label class="form-label" for="equipment_id">Target Machinery *</label>
+        <select id="equipment_id" name="equipment_id" class="form-control" required>
+          <option value="">Select Equipment...</option>
+          {% for eq in equipment_list %}
+            <option value="{{ eq.id }}" {% if prefill_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }} ({{ eq.equipment_type }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label class="form-label" for="priority">Priority Level *</label>
+        <select id="priority" name="priority" class="form-control" required>
+          <option value="low">Low Priority</option>
+          <option value="medium" selected>Medium Priority</option>
+          <option value="high">High Priority</option>
+          <option value="critical">Critical / Emergency</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="title">Work Order Title / Task Name *</label>
+      <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Inspect Mill Drive Pinion Bearing Lubrication" value="{{ prefill_title }}" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="problem_description">Observed Fault / Defect Description *</label>
+      <textarea id="problem_description" name="problem_description" class="form-control" rows="4" placeholder="Detail the observed condition, threshold exceedance, or preventive task requirements..." required>{{ prefill_desc }}</textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="assigned_to_id">Assigned Technician</label>
+        <select id="assigned_to_id" name="assigned_to_id" class="form-control">
+          <option value="">Leave Unassigned</option>
+          {% for tech in technicians %}
+            <option value="{{ tech.id }}">{{ tech.full_name or tech.username }} ({{ tech.role|replace('_', ' ') }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="due_date">Target Completion Date</label>
+        <input type="date" id="due_date" name="due_date" class="form-control">
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+      <button type="submit" class="btn btn-primary">Dispatch Work Order</button>
+      <a href="{{ url_for('maintenance.work_orders') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

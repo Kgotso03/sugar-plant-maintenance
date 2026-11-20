@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F465; User & Role Management</h1>
+    <p class="page-subtitle">Role-Based Access Control (RBAC): Administrators, Reliability Engineers, Technicians, Plant Managers</p>
+  </div>
+  <a href="{{ url_for('users.create') }}" class="btn btn-primary">
+    <span>+ Create User</span>
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Username</th>
+          <th>Full Name</th>
+          <th>Email</th>
+          <th>System Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>#{{ u.id }}</td>
+          <td><strong>{{ u.username }}</strong></td>
+          <td>{{ u.full_name or '-' }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="badge {% if u.role == 'administrator' %}badge-critical{% elif u.role == 'maintenance_engineer' %}badge-warning{% elif u.role == 'plant_manager' %}badge-open{% else %}badge-normal{% endif %}">
+              {{ u.role|replace('_', ' ')|title }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {% if u.is_active %}badge-normal{% else %}badge-stopped{% endif %}">
+              {{ 'Active' if u.is_active else 'Deactivated' }}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+              <a href="{{ url_for('users.edit', user_id=u.id) }}" class="btn btn-sm btn-secondary">&#x270E; Edit</a>
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('users.toggle', user_id=u.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-sm {% if u.is_active %}btn-warning{% else %}btn-success{% endif %}"
+                        onclick="return confirm('{{ 'Deactivate' if u.is_active else 'Activate' }} user {{ u.username }}?')">
+                  {{ 'Deactivate' if u.is_active else 'Activate' }}
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('users.delete', user_id=u.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Permanently delete user {{ u.username }}? This cannot be undone.')">
+                  &#x1F5D1; Delete
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

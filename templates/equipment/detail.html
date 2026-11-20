@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}{{ equipment.equipment_tag }} - Asset Details{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <h1 class="page-title">{{ equipment.equipment_tag }}: {{ equipment.name }}</h1>
+      <span class="badge badge-{{ equipment.operating_status }}">{{ equipment.operating_status }}</span>
+    </div>
+    <p class="page-subtitle">{{ equipment.equipment_type }} | Area: {{ equipment.plant_area.name if equipment.plant_area else '-' }}</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="{{ url_for('maintenance.create_order', equipment_id=equipment.id) }}" class="btn btn-primary btn-sm">
+      <span>+ Issue Work Order</span>
+    </a>
+    <a href="{{ url_for('equipment.index') }}" class="btn btn-secondary btn-sm">&larr; Back</a>
+  </div>
+</div>
+
+<!-- Asset Specification Summary Cards -->
+<div class="grid-cols-4">
+  <div class="card">
+    <div class="stat-label">Category</div>
+    <div style="font-weight: 700; margin-top: 0.25rem;">{{ equipment.equipment_type }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Process Area</div>
+    <div style="font-weight: 700; margin-top: 0.25rem;">{{ equipment.plant_area.name if equipment.plant_area else '-' }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Commissioned</div>
+    <div style="font-weight: 700; margin-top: 0.25rem;">{{ equipment.installation_date or 'Not recorded' }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Configured Channels</div>
+    <div style="font-weight: 700; margin-top: 0.25rem;">{{ sensors|length }} Active Sensors</div>
+  </div>
+</div>
+
+<!-- Telemetry Live Chart -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x1F4C8; Telemetry History Stream</h3>
+    <span class="badge badge-normal">Simulated Telemetry</span>
+  </div>
+  <div style="height: 240px; position: relative;">
+    <canvas id="equipTelemetryChart"></canvas>
+  </div>
+</div>
+
+<!-- Configured Sensor Thresholds & Latest Readings -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x1F39B; Configured Safety Thresholds & Telemetry State</h3>
+    <a href="{{ url_for('sensors.index', equipment_id=equipment.id) }}" class="btn btn-sm btn-secondary">Manage Limits</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Sensor Channel</th>
+          <th>Type</th>
+          <th>Latest Reading</th>
+          <th>Warning Thresholds</th>
+          <th>Critical Thresholds</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sensors %}
+        {% set r = latest_readings.get(s.id) %}
+        <tr>
+          <td style="font-weight: 600;">{{ s.sensor_name }}</td>
+          <td><code>{{ s.sensor_type }}</code></td>
+          <td>
+            {% if r %}
+              <strong>{{ r.value }}</strong> {{ s.unit }}
+              <div style="font-size: 0.72rem; color: var(--text-muted);">{{ r.recorded_at.strftime('%H:%M:%S') }}</div>
+            {% else %}
+              <span style="color: var(--text-muted);">Awaiting telemetry</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: var(--warning);">
+              {{ s.warning_min if s.warning_min is not none else '-' }} to {{ s.warning_max if s.warning_max is not none else '-' }}
+            </span>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: var(--danger);">
+              {{ s.critical_min if s.critical_min is not none else '-' }} to {{ s.critical_max if s.critical_max is not none else '-' }}
+            </span>
+          </td>
+          <td>{{ s.unit }}</td>
+          <td>
+            {% if r %}
+              <span class="badge badge-{{ r.status }}">{{ r.status }}</span>
+            {% else %}
+              <span class="badge badge-normal">Idle</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('sensors.edit', sensor_id=s.id) }}" class="btn btn-sm btn-secondary">&#x270E; Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Active Alerts on this Equipment -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x26A0;&#xFE0F; Active Alerts</h3>
+  </div>
+  {% if active_alerts %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Sensor</th>
+          <th>Severity</th>
+          <th>Observed</th>
+          <th>Limit</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in active_alerts %}
+        <tr>
+          <td>{{ a.last_occurred_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ a.sensor_type }}</td>
+          <td><span class="badge badge-{{ a.severity }}">{{ a.severity }}</span></td>
+          <td><strong>{{ a.observed_value }}</strong></td>
+          <td>{{ a.configured_limit }}</td>
+          <td style="max-width: 300px;">{{ a.description }}</td>
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <form method="POST" action="{{ url_for('alerts.acknowledge', alert_id=a.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-secondary">&#x2714; Ack</button>
+              </form>
+              <form method="POST" action="{{ url_for('alerts.resolve', alert_id=a.id) }}" style="display:inline;">
+                <button class="btn btn-sm btn-success">&#x2713; Resolve</button>
+              </form>
+              <a href="{{ url_for('maintenance.create_order', alert_id=a.id) }}" class="btn btn-sm btn-primary">Create WO</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">
+    No active or unresolved alerts for this equipment.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Work Orders & Service History Grid -->
+<div class="grid-cols-2">
+  <!-- Work Orders -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F6E0; Work Orders</h3>
+      <a href="{{ url_for('maintenance.create_order', equipment_id=equipment.id) }}" class="btn btn-sm btn-primary">+ New WO</a>
+    </div>
+    {% if work_orders %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>WO #</th>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for wo in work_orders %}
+          <tr>
+            <td><a href="{{ url_for('maintenance.order_detail', order_id=wo.id) }}"><strong>{{ wo.work_order_number }}</strong></a></td>
+            <td>{{ wo.title }}</td>
+            <td><span class="badge badge-{{ wo.priority }}">{{ wo.priority }}</span></td>
+            <td><span class="badge badge-{{ wo.status }}">{{ wo.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">No work orders found.</div>
+    {% endif %}
+  </div>
+
+  <!-- Maintenance Service History -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F4DC; Historical Maintenance Log</h3>
+    </div>
+    {% if maintenance_records %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Summary</th>
+            <th>Cost ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for mr in maintenance_records %}
+          <tr>
+            <td>{{ mr.performed_at.strftime('%Y-%m-%d') }}</td>
+            <td><span class="badge badge-normal">{{ mr.record_type }}</span></td>
+            <td>{{ mr.title }}</td>
+            <td>${{ mr.cost }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding: 1rem; color: var(--text-muted); font-size: 0.85rem;">No historical maintenance records.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let equipChart;
+
+  async function loadEquipTelemetry() {
+    try {
+      const res = await fetch('/api/equipment/{{ equipment.id }}/telemetry');
+      if (res.ok) {
+        const readings = await res.json();
+        const grouped = {};
+        readings.forEach(r => {
+          if (!grouped[r.sensor_type]) grouped[r.sensor_type] = { times: [], vals: [] };
+          grouped[r.sensor_type].times.push(new Date(r.recorded_at).toLocaleTimeString());
+          grouped[r.sensor_type].vals.push(r.value);
+        });
+
+        const datasets = [];
+        const colors = {
+          temperature: '#dc2626',
+          vibration: '#d97706',
+          pressure: '#2563eb',
+          motor_current: '#7c3aed',
+          motor_speed: '#059669',
+          belt_speed: '#0284c7'
+        };
+
+        let commonLabels = [];
+        for (const [stype, data] of Object.entries(grouped)) {
+          if (data.times.length > commonLabels.length) commonLabels = data.times;
+          datasets.push({
+            label: stype,
+            data: data.vals,
+            borderColor: colors[stype] || '#64748b',
+            borderWidth: 2,
+            tension: 0.2,
+            fill: false,
+            pointRadius: 2
+          });
+        }
+
+        const ctx = document.getElementById('equipTelemetryChart');
+        if (equipChart) {
+          equipChart.data.labels = commonLabels;
+          equipChart.data.datasets = datasets;
+          equipChart.update('none');
+        } else {
+          equipChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: commonLabels, datasets: datasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { ticks: { font: { size: 9 } } },
+                y: { ticks: { font: { size: 9 } } }
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadEquipTelemetry();
+    setInterval(loadEquipTelemetry, 3000);
+  });
+</script>
+{% endblock %}

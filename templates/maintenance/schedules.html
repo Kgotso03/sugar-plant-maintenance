@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Preventive Maintenance Schedules{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F4C5; Preventive Maintenance Schedules</h1>
+    <p class="page-subtitle">Recurring inspection routines, lubrication cycles, and calibration calendar</p>
+  </div>
+  {% if current_user and (current_user.is_admin or current_user.role == 'maintenance_engineer') %}
+  <button class="btn btn-primary" onclick="document.getElementById('newScheduleCard').style.display = 'block';">
+    + New PM Routine
+  </button>
+  {% endif %}
+</div>
+
+<!-- New Schedule Modal / Inline Card -->
+<div id="newScheduleCard" class="card" style="display: none; margin-bottom: 1.5rem; border-color: var(--primary);">
+  <div class="card-header">
+    <h3 class="card-title">+ Configure Preventive Maintenance Routine</h3>
+    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('newScheduleCard').style.display = 'none';">&times;</button>
+  </div>
+  <form method="POST" action="{{ url_for('maintenance.create_schedule') }}">
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label class="form-label" for="equipment_id">Target Machinery *</label>
+        <select id="equipment_id" name="equipment_id" class="form-control" required>
+          <option value="">Select Asset...</option>
+          {% for eq in equipment_list %}
+            <option value="{{ eq.id }}">{{ eq.equipment_tag }} - {{ eq.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="flex: 1;">
+        <label class="form-label" for="interval_days">Interval (Days) *</label>
+        <input type="number" id="interval_days" name="interval_days" class="form-control" value="30" min="1" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="title">Routine Schedule Title *</label>
+      <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Monthly Vibration Sweep & Bearing Grease Repack" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Task Instructions & Standards</label>
+      <textarea id="description" name="description" class="form-control" rows="2" placeholder="List checkpoints, lube specs, safety lockouts..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="next_due_date">First Due Date *</label>
+        <input type="date" id="next_due_date" name="next_due_date" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="assigned_to_id">Assigned Technician</label>
+        <select id="assigned_to_id" name="assigned_to_id" class="form-control">
+          <option value="">Unassigned</option>
+          {% for tech in technicians %}
+            <option value="{{ tech.id }}">{{ tech.full_name or tech.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Save Routine</button>
+  </form>
+</div>
+
+<!-- Filter Bar -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter Machinery:</span>
+  <select name="equipment_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Equipment</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}" {% if selected_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Machinery</th>
+          <th>Routine Title</th>
+          <th>Cycle</th>
+          <th>Assigned Staff</th>
+          <th>Last Completed</th>
+          <th>Next Due Date</th>
+          <th>Schedule Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td>
+            <a href="{{ url_for('equipment.detail', equip_id=s.equipment_id) }}">
+              <strong>{{ s.equipment.equipment_tag }}</strong>
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ s.equipment.name }}</div>
+          </td>
+          <td>
+            <div style="font-weight: 600;">{{ s.title }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ s.description or '' }}</div>
+          </td>
+          <td>Every {{ s.interval_days }} days</td>
+          <td>{{ s.assigned_to.full_name or s.assigned_to.username if s.assigned_to else 'Unassigned' }}</td>
+          <td>{{ s.last_performed_at.strftime('%Y-%m-%d') if s.last_performed_at else 'Never' }}</td>
+          <td>
+            <strong style="color: {% if s.next_due_date < today %}var(--danger){% else %}var(--navy-dark){% endif %};">
+              {{ s.next_due_date.strftime('%Y-%m-%d') }}
+            </strong>
+          </td>
+          <td>
+            {% if s.next_due_date < today %}
+              <span class="badge badge-critical">OVERDUE</span>
+            {% elif s.next_due_date == today %}
+              <span class="badge badge-warning">DUE TODAY</span>
+            {% else %}
+              <span class="badge badge-normal">SCHEDULED</span>
+            {% endif %}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-success" onclick="openExecuteModal('{{ s.id }}', '{{ s.title }}')">
+              &#x2714; Execute
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No preventive maintenance schedules found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Simple execution prompt script -->
+<script>
+  function openExecuteModal(id, title) {
+    const notes = prompt(`Complete scheduled task "${title}". Enter execution notes / findings:`, "Routine preventive service completed successfully.");
+    if (notes === null) return;
+    const labor = prompt("Enter technician labor hours:", "1.0") || "1.0";
+    const cost = prompt("Enter maintenance cost ($):", "0.0") || "0.0";
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/maintenance/schedules/${id}/execute`;
+
+    const inputNotes = document.createElement('input');
+    inputNotes.type = 'hidden';
+    inputNotes.name = 'notes';
+    inputNotes.value = notes;
+    form.appendChild(inputNotes);
+
+    const inputLabor = document.createElement('input');
+    inputLabor.type = 'hidden';
+    inputLabor.name = 'labor_hours';
+    inputLabor.value = labor;
+    form.appendChild(inputLabor);
+
+    const inputCost = document.createElement('input');
+    inputCost.type = 'hidden';
+    inputCost.name = 'cost';
+    inputCost.value = cost;
+    form.appendChild(inputCost);
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+</script>
+{% endblock %}
+

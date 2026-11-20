@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Sensor Thresholds{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Configurable Safety Thresholds</h1>
+    <p class="page-subtitle">Demonstration operating envelopes, warning trigger levels, and critical safety cutoffs</p>
+  </div>
+  <a href="{{ url_for('sensors.trends') }}" class="btn btn-secondary btn-sm">&#x1F4C8; View Live Trends</a>
+</div>
+
+<!-- Notice banner on demonstration limits -->
+<div class="simulation-notice-banner" style="background:#eff6ff; border-left-color:#3b82f6; color:#1e40af;">
+  <div>
+    <strong>DEMONSTRATION THRESHOLDS:</strong> Industrial limits configured below are academic baselines. In production sugar processing plants, operating limits must be determined by qualified mechanical and electrical engineers.
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter:</span>
+  <select name="equipment_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Equipment</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}" {% if selected_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="sensor_type" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Sensor Types</option>
+    {% for st in sensor_types %}
+      <option value="{{ st }}" {% if selected_type == st %}selected{% endif %}>{{ st }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Sensor Channel</th>
+          <th>Physical Type</th>
+          <th>Acceptable Range</th>
+          <th>Warning Limits</th>
+          <th>Critical Limits</th>
+          <th>Unit</th>
+          <th>Enabled</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sensors %}
+        <tr>
+          <td><strong style="color:var(--primary);">{{ s.equipment.equipment_tag }}</strong></td>
+          <td style="font-weight: 600;">{{ s.sensor_name }}</td>
+          <td><code>{{ s.sensor_type }}</code></td>
+          <td>{{ s.min_acceptable }} to {{ s.max_acceptable }}</td>
+          <td>
+            <span style="color: var(--warning); font-weight:600;">
+              {{ s.warning_min if s.warning_min is not none else '-' }} - {{ s.warning_max if s.warning_max is not none else '-' }}
+            </span>
+          </td>
+          <td>
+            <span style="color: var(--danger); font-weight:600;">
+              {{ s.critical_min if s.critical_min is not none else '-' }} - {{ s.critical_max if s.critical_max is not none else '-' }}
+            </span>
+          </td>
+          <td>{{ s.unit }}</td>
+          <td>
+            <span class="badge {% if s.is_enabled %}badge-normal{% else %}badge-stopped{% endif %}">
+              {{ 'Active' if s.is_enabled else 'Disabled' }}
+            </span>
+          </td>
+          <td>
+            {% if current_user and (current_user.is_admin or current_user.role == 'maintenance_engineer') %}
+              <a href="{{ url_for('sensors.edit', sensor_id=s.id) }}" class="btn btn-sm btn-secondary">&#x270E; Edit Limits</a>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.75rem;">View Only</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

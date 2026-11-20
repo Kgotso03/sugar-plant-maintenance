@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}ML Failure Predictions{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F9E0; Machine Learning Equipment Failure Risk</h1>
+    <p class="page-subtitle">Random Forest ensemble predicting failure probability from multi-sensor trend indicators</p>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <button class="btn btn-primary btn-sm" onclick="runPredictionsNow()">
+      &#x25B6; Run Forecast Now
+    </button>
+    {% if current_user and (current_user.is_admin or current_user.role == 'maintenance_engineer') %}
+    <button class="btn btn-secondary btn-sm" onclick="retrainModelNow()">
+      &#x21BB; Retrain Model
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Notice on Advisory AI -->
+<div class="simulation-notice-banner" style="background:#fdf2f8; border-left-color:#db2777; color:#831843;">
+  <div>
+    <strong>ADVISORY PREDICTIONS:</strong> The Random Forest model provides diagnostic decision support for maintenance planning. It does NOT automatically stop or command industrial machinery. Validation on historical plant data is required prior to real-world deployment.
+  </div>
+</div>
+
+<!-- Model Evaluation & Metrics Panel -->
+<div class="grid-cols-3">
+  <!-- Performance Overview -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F4CA; Model Evaluation (Held-Out Test Set)</h3>
+      <span class="badge badge-normal">{{ metrics.model_version }}</span>
+    </div>
+    <div style="font-size: 0.85rem; line-height: 1.8;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Algorithm:</span>
+        <strong>{{ metrics.model_type }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Overall Accuracy:</span>
+        <strong style="color: var(--success);">{{ "%.1f"|format(metrics.overall_accuracy * 100) }}%</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Weighted F1-Score:</span>
+        <strong>{{ "%.4f"|format(metrics.weighted_f1) }}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Weighted Precision / Recall:</span>
+        <span>{{ "%.3f"|format(metrics.weighted_precision) }} / {{ "%.3f"|format(metrics.weighted_recall) }}</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-muted);">Train / Test Split:</span>
+        <span>{{ metrics.n_train }} / {{ metrics.n_test }} samples</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confusion Matrix -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F9E9; Confusion Matrix</h3>
+      <span style="font-size:0.75rem; color:var(--text-muted);">Rows: True | Cols: Pred</span>
+    </div>
+    <table class="table" style="text-align: center; font-size: 0.8rem;">
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Pred Low</th>
+          <th>Pred Med</th>
+          <th>Pred High</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if metrics.confusion_matrix %}
+        <tr>
+          <td style="font-weight:600; text-align: left;">True Low</td>
+          <td style="background:#f0fdf4; font-weight:700;">{{ metrics.confusion_matrix[0][0] }}</td>
+          <td>{{ metrics.confusion_matrix[0][1] }}</td>
+          <td>{{ metrics.confusion_matrix[0][2] }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600; text-align: left;">True Med</td>
+          <td>{{ metrics.confusion_matrix[1][0] }}</td>
+          <td style="background:#fefce8; font-weight:700;">{{ metrics.confusion_matrix[1][1] }}</td>
+          <td>{{ metrics.confusion_matrix[1][2] }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600; text-align: left;">True High</td>
+          <td>{{ metrics.confusion_matrix[2][0] }}</td>
+          <td>{{ metrics.confusion_matrix[2][1] }}</td>
+          <td style="background:#fef2f2; font-weight:700; color:var(--danger);">{{ metrics.confusion_matrix[2][2] }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Feature Importances -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x2696;&#xFE0F; Top Telemetry Predictors</h3>
+    </div>
+    <div style="font-size: 0.78rem;">
+      {% if metrics.feature_importances %}
+        {% for feat, imp in metrics.feature_importances.items() %}
+        <div style="margin-bottom: 0.4rem;">
+          <div style="display:flex; justify-content: space-between; margin-bottom: 0.15rem;">
+            <span>{{ feat }}</span>
+            <strong>{{ "%.1f"|format(imp * 100) }}%</strong>
+          </div>
+          <div style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 2px;">
+            <div style="width: {{ imp * 100 }}%; height: 100%; background: var(--primary); border-radius: 2px;"></div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Predictions Table -->
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x1F52E; Equipment Risk Assessments</h3>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="{{ url_for('predictions.index', risk='high') }}" class="badge badge-critical" style="text-decoration:none;">High Risk Only</a>
+      <a href="{{ url_for('predictions.index') }}" class="btn btn-sm btn-secondary">Clear Filter</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Prediction Time</th>
+          <th>Risk Category</th>
+          <th>Risk Probability</th>
+          <th>Contributing Sensor Indicators</th>
+          <th>Recommended Engineering Action</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in predictions %}
+        <tr>
+          <td>
+            <a href="{{ url_for('equipment.detail', equip_id=p.equipment_id) }}">
+              <strong>{{ p.equipment.equipment_tag }}</strong>
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ p.equipment.name }}</div>
+          </td>
+          <td>{{ p.prediction_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td><span class="badge badge-{{ p.risk_category }}">{{ p.risk_category }} Risk</span></td>
+          <td>
+            <div style="font-weight: 700; color: {% if p.risk_category == 'high' %}var(--danger){% elif p.risk_category == 'medium' %}var(--warning){% else %}var(--success){% endif %};">
+              {{ "%.1f"|format(p.risk_score * 100) }}%
+            </div>
+          </td>
+          <td style="max-width: 280px; font-size: 0.8rem;">
+            <ul style="padding-left: 1rem; margin: 0;">
+              {% for factor in p.get_factors() %}
+                <li>{{ factor }}</li>
+              {% endfor %}
+            </ul>
+          </td>
+          <td style="max-width: 320px; font-size: 0.8rem; font-style: italic;">
+            {{ p.recommended_action }}
+          </td>
+          <td>
+            {% if p.risk_category in ('high', 'medium') %}
+              <a href="{{ url_for('maintenance.create_order', equipment_id=p.equipment_id) }}" class="btn btn-sm btn-primary">
+                + Create WO
+              </a>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.75rem;">Normal</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No predictions generated yet. Click "Run Forecast Now" to assess active equipment.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function runPredictionsNow() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Evaluating telemetry...";
+    try {
+      const res = await fetch('/api/predictions/run', { method: 'POST' });
+      if (res.ok) {
+        window.location.reload();
+      }
+    } catch (e) {
+      alert("Prediction error: " + e);
+      btn.disabled = false;
+    }
+  }
+
+  async function retrainModelNow() {
+    if (!confirm("Retrain Random Forest classifier on fresh synthetic training telemetry?")) return;
+    try {
+      const res = await fetch('/api/predictions/retrain', { method: 'POST' });
+      if (res.ok) {
+        alert("Model successfully retrained and persisted!");
+        window.location.reload();
+      }
+    } catch(e) {
+      alert("Retraining failed: " + e);
+    }
+  }
+</script>
+{% endblock %}

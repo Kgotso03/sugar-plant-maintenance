@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Work Orders{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F6E0; Maintenance Work Orders</h1>
+    <p class="page-subtitle">Repair dispatch, fault remediation, technician assignments, and labor tracking</p>
+  </div>
+  {% if current_user and (current_user.is_admin or current_user.role == 'maintenance_engineer') %}
+  <a href="{{ url_for('maintenance.create_order') }}" class="btn btn-primary">
+    <span>+ Create Work Order</span>
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter:</span>
+  <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    {% for st in statuses %}
+      <option value="{{ st }}" {% if selected_status == st %}selected{% endif %}>{{ st|replace('_', ' ')|title }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="priority" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Priorities</option>
+    {% for pr in priorities %}
+      <option value="{{ pr }}" {% if selected_priority == pr %}selected{% endif %}>{{ pr|title }} Priority</option>
+    {% endfor %}
+  </select>
+
+  <select name="equipment_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Machinery</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}" {% if selected_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+
+  {% if selected_status or selected_priority or selected_equip %}
+    <a href="{{ url_for('maintenance.work_orders') }}" class="btn btn-sm btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>WO #</th>
+          <th>Asset</th>
+          <th>Title & Problem Summary</th>
+          <th>Priority</th>
+          <th>Assigned Staff</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for wo in work_orders %}
+        <tr>
+          <td>
+            <a href="{{ url_for('maintenance.order_detail', order_id=wo.id) }}">
+              <strong>{{ wo.work_order_number }}</strong>
+            </a>
+          </td>
+          <td>
+            <strong>{{ wo.equipment.equipment_tag }}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ wo.equipment.name }}</div>
+          </td>
+          <td style="max-width: 320px;">
+            <div style="font-weight: 600;">{{ wo.title }}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ wo.problem_description }}
+            </div>
+          </td>
+          <td><span class="badge badge-{{ wo.priority }}">{{ wo.priority }}</span></td>
+          <td>
+            {{ wo.assigned_to.full_name or wo.assigned_to.username if wo.assigned_to else '<span style="color:var(--text-muted);">Unassigned</span>'|safe }}
+          </td>
+          <td>{{ wo.due_date.strftime('%Y-%m-%d') if wo.due_date else '-' }}</td>
+          <td><span class="badge badge-{{ wo.status }}">{{ wo.status|replace('_', ' ') }}</span></td>
+          <td>
+            <a href="{{ url_for('maintenance.order_detail', order_id=wo.id) }}" class="btn btn-sm btn-secondary">
+              Manage &rarr;
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No work orders found matching the filter criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

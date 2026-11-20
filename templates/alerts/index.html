@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Fault Alerts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x26A0;&#xFE0F; Equipment Fault Alerts</h1>
+    <p class="page-subtitle">Configurable threshold limit breaches and anomaly events</p>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter Alerts:</span>
+  <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+    <option value="acknowledged" {% if selected_status == 'acknowledged' %}selected{% endif %}>Acknowledged</option>
+    <option value="resolved" {% if selected_status == 'resolved' %}selected{% endif %}>Resolved</option>
+  </select>
+
+  <select name="severity" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Severities</option>
+    <option value="warning" {% if selected_severity == 'warning' %}selected{% endif %}>Warning</option>
+    <option value="critical" {% if selected_severity == 'critical' %}selected{% endif %}>Critical</option>
+  </select>
+
+  <select name="equipment_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Machinery</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}" {% if selected_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+
+  {% if selected_status or selected_severity or selected_equip %}
+    <a href="{{ url_for('alerts.index') }}" class="btn btn-sm btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Alert ID</th>
+          <th>Last Detected</th>
+          <th>Machinery</th>
+          <th>Severity</th>
+          <th>Sensor Channel</th>
+          <th>Telemetry / Limit</th>
+          <th>Fault Description</th>
+          <th>Status</th>
+          <th>Audit / Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+        <tr>
+          <td>#{{ a.id }}</td>
+          <td>{{ a.last_occurred_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>
+            <a href="{{ url_for('equipment.detail', equip_id=a.equipment_id) }}">
+              <strong>{{ a.equipment.equipment_tag }}</strong>
+            </a>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ a.equipment.name }}</div>
+          </td>
+          <td><span class="badge badge-{{ a.severity }}">{{ a.severity }}</span></td>
+          <td><code>{{ a.sensor_type }}</code></td>
+          <td>
+            <strong>{{ a.observed_value }}</strong>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">(limit {{ a.configured_limit }})</span>
+          </td>
+          <td style="max-width: 280px; font-size: 0.8rem;">
+            {{ a.description }}
+            {% if a.comments %}
+              <div style="font-size: 0.72rem; color: #475569; margin-top: 0.25rem; white-space: pre-wrap; background: #f8fafc; padding: 0.25rem;">{{ a.comments }}</div>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-{{ a.status }}">{{ a.status }}</span></td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+              {% if a.status == 'active' %}
+                <form method="POST" action="{{ url_for('alerts.acknowledge', alert_id=a.id) }}">
+                  <button type="submit" class="btn btn-sm btn-secondary" style="width: 100%;">&#x2714; Ack</button>
+                </form>
+              {% endif %}
+              {% if a.status != 'resolved' %}
+                <form method="POST" action="{{ url_for('alerts.resolve', alert_id=a.id) }}">
+                  <button type="submit" class="btn btn-sm btn-success" style="width: 100%;">&#x2713; Resolve</button>
+                </form>
+                <a href="{{ url_for('maintenance.create_order', alert_id=a.id) }}" class="btn btn-sm btn-primary" style="text-align: center;">+ Issue WO</a>
+              {% else %}
+                <span style="font-size: 0.72rem; color: var(--text-muted);">
+                  Resolved by {{ a.resolved_by.username if a.resolved_by else 'system' }}
+                </span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No alerts found matching filter criteria.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

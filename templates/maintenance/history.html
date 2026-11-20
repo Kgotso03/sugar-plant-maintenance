@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance & Repair History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F4DC; Equipment Maintenance & Repair History</h1>
+    <p class="page-subtitle">Audited log of completed repairs, downtime metrics, parts replaced, and maintenance costs</p>
+  </div>
+  <a href="{{ url_for('reports.index', report_type='maintenance_costs') }}" class="btn btn-secondary btn-sm">&#x1F4CA; Financial Summary</a>
+</div>
+
+<!-- Financial & Downtime Summary Cards -->
+<div class="grid-cols-3">
+  <div class="card stat-card">
+    <div class="stat-icon" style="background:#eff6ff; color:#2563eb;">&#x1F4B0;</div>
+    <div>
+      <div class="stat-value">${{ total_cost }}</div>
+      <div class="stat-label">Total Cumulative Maintenance Cost</div>
+    </div>
+  </div>
+
+  <div class="card stat-card">
+    <div class="stat-icon" style="background:#fef2f2; color:#dc2626;">&#x23F1;</div>
+    <div>
+      <div class="stat-value">{{ total_downtime }} hrs</div>
+      <div class="stat-label">Total Factory Downtime</div>
+    </div>
+  </div>
+
+  <div class="card stat-card">
+    <div class="stat-icon" style="background:#f0fdf4; color:#16a34a;">&#x1F9D1;&#x200D;&#x1F527;</div>
+    <div>
+      <div class="stat-value">{{ total_hours }} hrs</div>
+      <div class="stat-label">Total Labor Hours Invested</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter History:</span>
+  <select name="equipment_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Equipment</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}" {% if selected_equip == eq.id %}selected{% endif %}>{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="record_type" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Record Types</option>
+    {% for rt in record_types %}
+      <option value="{{ rt }}" {% if selected_type == rt %}selected{% endif %}>{{ rt|title }}</option>
+    {% endfor %}
+  </select>
+
+  {% if selected_equip or selected_type %}
+    <a href="{{ url_for('maintenance.history') }}" class="btn btn-sm btn-secondary">Clear</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Execution Date</th>
+          <th>Machinery</th>
+          <th>Record Type</th>
+          <th>Service / Repair Summary</th>
+          <th>Corrective Action Taken</th>
+          <th>Parts Replaced</th>
+          <th>Labor</th>
+          <th>Cost</th>
+          <th>Downtime</th>
+          <th>Technician</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>
+            <a href="{{ url_for('equipment.detail', equip_id=r.equipment_id) }}">
+              <strong>{{ r.equipment.equipment_tag }}</strong>
+            </a>
+          </td>
+          <td><span class="badge badge-normal">{{ r.record_type }}</span></td>
+          <td style="font-weight: 600;">{{ r.title }}</td>
+          <td style="max-width: 250px; font-size: 0.8rem;">{{ r.action_taken }}</td>
+          <td style="max-width: 180px; font-size: 0.8rem; color: var(--text-muted);">{{ r.parts_replaced or 'None' }}</td>
+          <td>{{ r.labor_hours }}h</td>
+          <td>${{ r.cost }}</td>
+          <td><strong style="color: {% if r.estimated_downtime_hours > 0 %}var(--danger){% else %}var(--text-muted){% endif %};">{{ r.estimated_downtime_hours }}h</strong></td>
+          <td>{{ r.performed_by.username if r.performed_by else 'System' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No historical maintenance records found.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

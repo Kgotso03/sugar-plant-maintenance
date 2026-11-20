@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment secrets — NEVER commit this file
+.env
+
+# Flask instance folder
+instance/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.log
+
+# Machine learning artifacts
+*.pkl
+*.joblib
+*.h5
+models/saved/
+# Keep pre-trained model store for serverless deployment
+!ml/model_store/*.joblib
+!ml/model_store/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# OS files
+Thumbs.db
+.DS_Store
+

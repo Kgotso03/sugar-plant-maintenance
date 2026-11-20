@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Settings & Audit Logs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x2699; System Settings & Audit Trail</h1>
+    <p class="page-subtitle">Security audit trail, simulation controls, and regulatory safety boundaries</p>
+  </div>
+</div>
+
+<div class="grid-cols-2">
+  <!-- System Architecture & Boundaries -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F6E1;&#xFE0F; Industrial Safety Boundaries & Notice</h3>
+    </div>
+    <div style="font-size: 0.85rem; line-height: 1.7; color: #334155;">
+      <p style="margin-bottom: 0.75rem;">
+        <strong>Software Simulation Scope:</strong> This application is a high-fidelity predictive maintenance and factory telemetry simulator designed for engineering training and proof-of-concept demonstration.
+      </p>
+      <ul style="padding-left: 1.25rem; margin-bottom: 0.75rem;">
+        <li>Does not interface with or send actuation commands to PLCs, DCS, or SCADA.</li>
+        <li>Does not directly start, stop, or interlock physical high-voltage equipment.</li>
+        <li>Sensor streams are synthetically derived and clearly labeled <strong>SIMULATED DATA</strong>.</li>
+        <li>ML failure risk estimates are diagnostic recommendations and do not replace certified engineering judgement.</li>
+      </ul>
+      <div style="background:#f1f5f9; padding:0.6rem; border-radius:var(--radius-sm); font-size:0.75rem; color:#64748b;">
+        Operating under simulated compliance with ISO 13374 Condition Monitoring and ISO 10816 Vibration Severity Standards.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- System Audit Trail -->
+<div class="card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <h3 class="card-title">&#x1F4DC; System Security & Operational Audit Log</h3>
+    <span style="font-size:0.75rem; color:var(--text-muted);">Last 100 User & System Transactions</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Log ID</th>
+          <th>Timestamp</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Target Entity</th>
+          <th>Details</th>
+          <th>IP Address</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td>#{{ log.id }}</td>
+          <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td><strong>{{ log.user.username if log.user else 'System' }}</strong></td>
+          <td><code>{{ log.action }}</code></td>
+          <td>{{ log.entity_type }} {% if log.entity_id %}#{{ log.entity_id }}{% endif %}</td>
+          <td style="max-width: 320px; font-size: 0.8rem;">{{ log.details or '-' }}</td>
+          <td style="font-size: 0.75rem; color: var(--text-muted);">{{ log.ip_address or '127.0.0.1' }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No audit logs recorded yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

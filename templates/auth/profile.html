@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F464; User Profile</h1>
+    <p class="page-subtitle">Your system account and security privileges</p>
+  </div>
+</div>
+
+<div class="card" style="max-width: 600px;">
+  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="user-avatar" style="width: 60px; height: 60px; font-size: 1.5rem; background: var(--primary);">
+      {{ user.username[0]|upper }}
+    </div>
+    <div>
+      <h2 style="font-size: 1.2rem; color: var(--navy-dark);">{{ user.full_name or user.username }}</h2>
+      <span class="badge badge-normal">{{ user.role|replace('_', ' ')|title }}</span>
+    </div>
+  </div>
+
+  <div style="font-size: 0.9rem; line-height: 2; border-top: 1px solid var(--border-light); padding-top: 1rem;">
+    <div><span style="color:var(--text-muted);">Username:</span> <strong>{{ user.username }}</strong></div>
+    <div><span style="color:var(--text-muted);">Email:</span> <strong>{{ user.email }}</strong></div>
+    <div><span style="color:var(--text-muted);">Status:</span> <span class="badge badge-normal">Active</span></div>
+    <div><span style="color:var(--text-muted);">Member Since:</span> <span>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</span></div>
+  </div>
+</div>
+{% endblock %}
+

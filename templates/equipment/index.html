@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Assets{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Factory Equipment Registry</h1>
+    <p class="page-subtitle">Sugar processing machinery, configured sensors, and operating statuses</p>
+  </div>
+  {% if current_user and current_user.is_admin %}
+  <a href="{{ url_for('equipment.create') }}" class="btn btn-primary">
+    <span>+ Register Equipment</span>
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter:</span>
+  <select name="plant_area_id" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Plant Areas</option>
+    {% for area in plant_areas %}
+      <option value="{{ area.id }}" {% if selected_area == area.id %}selected{% endif %}>{{ area.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="equipment_type" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Types</option>
+    {% for etype in equipment_types %}
+      <option value="{{ etype }}" {% if selected_type == etype %}selected{% endif %}>{{ etype }}</option>
+    {% endfor %}
+  </select>
+
+  <select name="status" class="form-control" style="width: auto;" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    <option value="running" {% if selected_status == 'running' %}selected{% endif %}>Running</option>
+    <option value="idle" {% if selected_status == 'idle' %}selected{% endif %}>Idle</option>
+    <option value="stopped" {% if selected_status == 'stopped' %}selected{% endif %}>Stopped</option>
+    <option value="maintenance" {% if selected_status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+    <option value="decommissioned" {% if selected_status == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
+  </select>
+
+  {% if selected_area or selected_type or selected_status %}
+    <a href="{{ url_for('equipment.index') }}" class="btn btn-sm btn-secondary">Clear Filters</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Tag</th>
+          <th>Equipment Name</th>
+          <th>Type</th>
+          <th>Plant Area</th>
+          <th>Status</th>
+          <th>Sensors</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for eq in equipment_list %}
+        <tr>
+          <td><strong style="color: var(--primary);">{{ eq.equipment_tag }}</strong></td>
+          <td style="font-weight: 600;">{{ eq.name }}</td>
+          <td><span class="badge badge-normal" style="background:#f8fafc; border-color:#e2e8f0; color:#334155;">{{ eq.equipment_type }}</span></td>
+          <td>{{ eq.plant_area.name if eq.plant_area else '-' }}</td>
+          <td>
+            <span class="badge badge-{{ eq.operating_status }}">
+              {{ eq.operating_status }}
+            </span>
+          </td>
+          <td>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">
+              {{ eq.sensors|length }} channels
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <a href="{{ url_for('equipment.detail', equip_id=eq.id) }}" class="btn btn-sm btn-secondary">&#x1F441; Details</a>
+              {% if current_user and current_user.is_admin %}
+                <a href="{{ url_for('equipment.edit', equip_id=eq.id) }}" class="btn btn-sm btn-secondary">&#x270E; Edit</a>
+                <form method="POST" action="{{ url_for('equipment.toggle', equip_id=eq.id) }}" style="display:inline;">
+                  <button type="submit" class="btn btn-sm {% if eq.is_active %}btn-danger{% else %}btn-success{% endif %}" data-confirm="Change active state for {{ eq.equipment_tag }}?">
+                    {{ 'Deactivate' if eq.is_active else 'Activate' }}
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit User' if user else 'New User' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ 'Edit User: ' + user.username if user else 'Create System User' }}</h1>
+    <p class="page-subtitle">Configure identity, credentials, and RBAC permissions</p>
+  </div>
+  <a href="{{ url_for('users.index') }}" class="btn btn-secondary">&larr; Back to Users</a>
+</div>
+
+<div class="card" style="max-width: 620px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="username">Username *</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. jdoe" value="{{ user.username if user else '' }}" {% if user %}readonly{% endif %} required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="role">System Role *</label>
+        <select id="role" name="role" class="form-control" required>
+          {% for r in roles %}
+            <option value="{{ r }}" {% if user and user.role == r %}selected{% endif %}>{{ r|replace('_', ' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="full_name">Full Name</label>
+      <input type="text" id="full_name" name="full_name" class="form-control" placeholder="e.g. John Doe" value="{{ user.full_name if user else '' }}">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="email">Email Address *</label>
+      <input type="email" id="email" name="email" class="form-control" placeholder="user@sugarplant.local" value="{{ user.email if user else '' }}" required>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">{{ 'Change Password (leave blank to keep current)' if user else 'Password *' }}</label>
+      <input type="password" id="password" name="password" class="form-control" placeholder="Enter secure password" {% if not user %}required{% endif %}>
+    </div>
+
+    {% if user %}
+    <div class="form-group">
+      <label class="form-label">Account Status</label>
+      <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.35rem;">
+        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 500;">
+          <input type="radio" name="is_active" value="1" {% if user.is_active %}checked{% endif %}> Active
+        </label>
+        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-weight: 500;">
+          <input type="radio" name="is_active" value="0" {% if not user.is_active %}checked{% endif %}> Deactivated
+        </label>
+      </div>
+      <small style="color: var(--text-muted); font-size: 0.78rem;">Deactivated users cannot log in.</small>
+    </div>
+    {% endif %}
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+      <button type="submit" class="btn btn-primary">Save User</button>
+      <a href="{{ url_for('users.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

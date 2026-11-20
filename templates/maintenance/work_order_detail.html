@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Work Order {{ order.work_order_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <h1 class="page-title">{{ order.work_order_number }}: {{ order.title }}</h1>
+      <span class="badge badge-{{ order.status }}">{{ order.status|replace('_', ' ') }}</span>
+      <span class="badge badge-{{ order.priority }}">{{ order.priority }} Priority</span>
+    </div>
+    <p class="page-subtitle">Target Machinery: <strong>{{ order.equipment.equipment_tag }} - {{ order.equipment.name }}</strong> ({{ order.equipment.plant_area.name if order.equipment.plant_area else '' }})</p>
+  </div>
+  <a href="{{ url_for('maintenance.work_orders') }}" class="btn btn-secondary btn-sm">&larr; Back to Work Orders</a>
+</div>
+
+<div class="grid-cols-3">
+  <!-- Work Order Main Details & Action Forms -->
+  <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 1.5rem;">
+    <!-- Problem Description Card -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">&#x1F4CB; Problem Description & Defect Details</h3>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Created: {{ order.created_at.strftime('%Y-%m-%d %H:%M') }} by {{ order.created_by.username }}</span>
+      </div>
+      <div style="font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; background: #f8fafc; padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light);">
+        {{ order.problem_description }}
+      </div>
+
+      {% if order.alert %}
+      <div style="margin-top: 1rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 0.8rem;">
+        <strong>Linked Anomaly Alert #{{ order.alert.id }}:</strong> {{ order.alert.description }} (Observed {{ order.alert.observed_value }} vs threshold limit {{ order.alert.configured_limit }})
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Technician Inspection & Repair Progress Form -->
+    {% if order.status not in ('completed', 'cancelled') %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">&#x1F527; Technician Work Log & Progress</h3>
+      </div>
+      <form method="POST" action="{{ url_for('maintenance.update_order', order_id=order.id) }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="status">Work Order Status</label>
+            <select id="status" name="status" class="form-control">
+              <option value="open" {% if order.status == 'open' %}selected{% endif %}>Open</option>
+              <option value="assigned" {% if order.status == 'assigned' %}selected{% endif %}>Assigned</option>
+              <option value="in_progress" {% if order.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+              <option value="awaiting_parts" {% if order.status == 'awaiting_parts' %}selected{% endif %}>Awaiting Parts</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="priority">Priority</label>
+            <select id="priority" name="priority" class="form-control">
+              <option value="low" {% if order.priority == 'low' %}selected{% endif %}>Low</option>
+              <option value="medium" {% if order.priority == 'medium' %}selected{% endif %}>Medium</option>
+              <option value="high" {% if order.priority == 'high' %}selected{% endif %}>High</option>
+              <option value="critical" {% if order.priority == 'critical' %}selected{% endif %}>Critical</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="assigned_to_id">Assigned Staff</label>
+            <select id="assigned_to_id" name="assigned_to_id" class="form-control">
+              <option value="0">Unassigned</option>
+              {% for tech in technicians %}
+                <option value="{{ tech.id }}" {% if order.assigned_to_id == tech.id %}selected{% endif %}>{{ tech.full_name or tech.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inspection_findings">Inspection Findings & Diagnostic Notes</label>
+          <textarea id="inspection_findings" name="inspection_findings" class="form-control" rows="3" placeholder="Describe physical condition, clearances, thermal imaging results, or electrical insulation test readings...">{{ order.inspection_findings or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="repair_actions">Repair Actions Taken</label>
+          <textarea id="repair_actions" name="repair_actions" class="form-control" rows="3" placeholder="Detail corrective mechanical/electrical work performed, alignment adjustments, lubrication repacking...">{{ order.repair_actions or '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="parts_used">Parts & Consumables Used</label>
+          <textarea id="parts_used" name="parts_used" class="form-control" rows="2" placeholder="e.g. 1x SKF 22220-E spherical roller bearing, 500g Mobilgrease XHP 222...">{{ order.parts_used or '' }}</textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="labor_hours">Labor Time (Hours)</label>
+            <input type="number" step="0.5" id="labor_hours" name="labor_hours" class="form-control" value="{{ order.labor_hours }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="maintenance_cost">Total Cost ($)</label>
+            <input type="number" step="0.01" id="maintenance_cost" name="maintenance_cost" class="form-control" value="{{ order.maintenance_cost }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="due_date">Target Due Date</label>
+            <input type="date" id="due_date" name="due_date" class="form-control" value="{{ order.due_date.isoformat() if order.due_date else '' }}">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-secondary" style="margin-top: 0.5rem;">
+          Save Progress Updates
+        </button>
+      </form>
+    </div>
+
+    <!-- Complete Work Order Card -->
+    <div class="card" style="border-color: #86efac; background-color: #f0fdf4;">
+      <div class="card-header" style="border-bottom-color: #bbf7d0;">
+        <h3 class="card-title" style="color: #15803d;">&#x2714; Complete & Archive Work Order</h3>
+      </div>
+      <form method="POST" action="{{ url_for('maintenance.complete_order', order_id=order.id) }}">
+        <div class="form-group">
+          <label class="form-label" for="completion_reason">Sign-Off Summary / Quality Verification Reason *</label>
+          <input type="text" id="completion_reason" name="completion_reason" class="form-control" placeholder="e.g. Vibration levels normalized below 2.5 mm/s; bearing temperatures steady at 52°C under full mill load." required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="comp_labor_hours">Final Labor Hours</label>
+            <input type="number" step="0.5" id="comp_labor_hours" name="labor_hours" class="form-control" value="{{ order.labor_hours }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="comp_cost">Final Maintenance Cost ($)</label>
+            <input type="number" step="0.01" id="comp_cost" name="maintenance_cost" class="form-control" value="{{ order.maintenance_cost }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="estimated_downtime_hours">Factory Downtime Incurred (Hours)</label>
+            <input type="number" step="0.1" id="estimated_downtime_hours" name="estimated_downtime_hours" class="form-control" value="0.0">
+          </div>
+        </div>
+
+        {% if order.alert_id %}
+        <div class="form-group" style="margin-top: 0.5rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.85rem;">
+            <input type="checkbox" name="resolve_alert" checked>
+            Automatically mark linked fault alert #{{ order.alert_id }} as RESOLVED
+          </label>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-success" style="margin-top: 0.5rem;">
+          Complete Work Order & Add to Repair History
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <!-- Completed or Cancelled Summary -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">&#x1F4DC; Completion Audit Summary</h3>
+        <span class="badge badge-{{ order.status }}">{{ order.status }}</span>
+      </div>
+      <div style="font-size: 0.88rem; line-height: 1.8;">
+        <div><strong>Completion Notes / Reason:</strong> {{ order.completion_reason }}</div>
+        <div><strong>Completed At:</strong> {{ order.completed_at.strftime('%Y-%m-%d %H:%M:%S') if order.completed_at else '-' }}</div>
+        <div><strong>Inspection Findings:</strong> {{ order.inspection_findings or 'None recorded' }}</div>
+        <div><strong>Repair Actions:</strong> {{ order.repair_actions or 'None recorded' }}</div>
+        <div><strong>Parts Used:</strong> {{ order.parts_used or 'None' }}</div>
+        <div><strong>Total Labor:</strong> {{ order.labor_hours }} hours</div>
+        <div><strong>Total Incurred Cost:</strong> ${{ order.maintenance_cost }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar Info & Controls -->
+  <div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title">&#x2139; Order Metadata</h3>
+      </div>
+      <div style="font-size: 0.85rem; line-height: 2;">
+        <div><span style="color:var(--text-muted);">Assigned To:</span> <strong>{{ order.assigned_to.full_name or order.assigned_to.username if order.assigned_to else 'Unassigned' }}</strong></div>
+        <div><span style="color:var(--text-muted);">Due Date:</span> <strong>{{ order.due_date.strftime('%Y-%m-%d') if order.due_date else 'Not set' }}</strong></div>
+        <div><span style="color:var(--text-muted);">Created Date:</span> <span>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</span></div>
+        <div><span style="color:var(--text-muted);">Created By:</span> <span>{{ order.created_by.username }}</span></div>
+        <div><span style="color:var(--text-muted);">Equipment Tag:</span> <a href="{{ url_for('equipment.detail', equip_id=order.equipment_id) }}"><strong>{{ order.equipment.equipment_tag }}</strong></a></div>
+      </div>
+    </div>
+
+    {% if order.status not in ('completed', 'cancelled') and current_user and (current_user.is_admin or current_user.role == 'maintenance_engineer') %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title" style="color: var(--danger);">&#x2718; Cancel Order</h3>
+      </div>
+      <form method="POST" action="{{ url_for('maintenance.cancel_order', order_id=order.id) }}">
+        <div class="form-group">
+          <label class="form-label" for="cancel_reason">Cancellation Reason</label>
+          <input type="text" id="cancel_reason" name="cancel_reason" class="form-control" placeholder="e.g. Duplicate order, machinery re-routed..." required>
+        </div>
+        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Are you sure you want to cancel this work order?">
+          Cancel Work Order
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

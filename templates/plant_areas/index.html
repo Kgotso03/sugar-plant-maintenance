@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Plant Areas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Configured Plant Areas</h1>
+    <p class="page-subtitle">Functional factory zones and operational process tandems</p>
+  </div>
+  {% if current_user and current_user.is_admin %}
+  <a href="{{ url_for('plant_areas.create') }}" class="btn btn-primary">
+    <span>+ Add Plant Area</span>
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Area Code</th>
+          <th>Plant Area Name</th>
+          <th>Description</th>
+          <th>Installed Assets</th>
+          <th>Status</th>
+          {% if current_user and current_user.is_admin %}
+          <th>Actions</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for area in areas %}
+        <tr>
+          <td><strong style="color: var(--primary);">{{ area.code }}</strong></td>
+          <td style="font-weight: 600;">{{ area.name }}</td>
+          <td style="max-width: 380px; color: var(--text-muted);">{{ area.description or '-' }}</td>
+          <td>
+            <a href="{{ url_for('equipment.index', plant_area_id=area.id) }}" class="badge badge-normal" style="text-decoration:none;">
+              {{ area.equipment|length }} Equipment
+            </a>
+          </td>
+          <td>
+            <span class="badge {% if area.is_active %}badge-normal{% else %}badge-stopped{% endif %}">
+              {{ 'Active' if area.is_active else 'Deactivated' }}
+            </span>
+          </td>
+          {% if current_user and current_user.is_admin %}
+          <td>
+            <div style="display: flex; gap: 0.35rem;">
+              <a href="{{ url_for('plant_areas.edit', area_id=area.id) }}" class="btn btn-sm btn-secondary">&#x270E; Edit</a>
+              <form method="POST" action="{{ url_for('plant_areas.toggle', area_id=area.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-sm {% if area.is_active %}btn-danger{% else %}btn-success{% endif %}" data-confirm="Toggle status for {{ area.name }}?">
+                  {{ 'Deactivate' if area.is_active else 'Activate' }}
+                </button>
+              </form>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

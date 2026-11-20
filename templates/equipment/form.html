@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit Equipment' if equipment else 'New Equipment' }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ 'Edit Asset: ' + equipment.equipment_tag if equipment else 'Register New Asset' }}</h1>
+    <p class="page-subtitle">Add or modify sugar processing machinery specifications</p>
+  </div>
+  <a href="{{ url_for('equipment.index') }}" class="btn btn-secondary">&larr; Back to Equipment</a>
+</div>
+
+<div class="card" style="max-width: 760px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="equipment_tag">Equipment Tag / ID *</label>
+        <input type="text" id="equipment_tag" name="equipment_tag" class="form-control" placeholder="e.g. MTR-202" value="{{ equipment.equipment_tag if equipment else '' }}" {% if equipment %}readonly{% endif %} required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="equipment_type">Equipment Category *</label>
+        <select id="equipment_type" name="equipment_type" class="form-control" required>
+          <option value="">Select Category...</option>
+          {% for etype in equipment_types %}
+            <option value="{{ etype }}" {% if equipment and equipment.equipment_type == etype %}selected{% endif %}>{{ etype }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label class="form-label" for="name">Asset Name *</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Secondary Cane Carrier Motor" value="{{ equipment.name if equipment else '' }}" required>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label class="form-label" for="plant_area_id">Plant Process Sector *</label>
+        <select id="plant_area_id" name="plant_area_id" class="form-control" required>
+          <option value="">Select Area...</option>
+          {% for area in plant_areas %}
+            <option value="{{ area.id }}" {% if equipment and equipment.plant_area_id == area.id %}selected{% endif %}>{{ area.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="operating_status">Operating Status</label>
+        <select id="operating_status" name="operating_status" class="form-control">
+          <option value="running" {% if equipment and equipment.operating_status == 'running' %}selected{% endif %}>Running</option>
+          <option value="idle" {% if equipment and equipment.operating_status == 'idle' %}selected{% endif %}>Idle</option>
+          <option value="stopped" {% if equipment and equipment.operating_status == 'stopped' %}selected{% endif %}>Stopped</option>
+          <option value="maintenance" {% if equipment and equipment.operating_status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+          <option value="decommissioned" {% if equipment and equipment.operating_status == 'decommissioned' %}selected{% endif %}>Decommissioned</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="installation_date">Commissioning Date</label>
+        <input type="date" id="installation_date" name="installation_date" class="form-control" value="{{ equipment.installation_date.isoformat() if equipment and equipment.installation_date else '' }}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Machinery Specifications & Technical Description</label>
+      <textarea id="description" name="description" class="form-control" rows="3" placeholder="Power rating, mechanical capacity, frame size, speed ratings...">{{ equipment.description if equipment else '' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="maintenance_info">Maintenance Protocols & Lubrication Notes</label>
+      <textarea id="maintenance_info" name="maintenance_info" class="form-control" rows="3" placeholder="Service cycle, lubricant grade, baseline vibration standards...">{{ equipment.maintenance_info if equipment else '' }}</textarea>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+      <button type="submit" class="btn btn-primary">Save Asset</button>
+      <a href="{{ url_for('equipment.index') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

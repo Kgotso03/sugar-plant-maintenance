@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Sensor Limits - {{ sensor.sensor_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Configure Sensor Limits: {{ sensor.sensor_name }}</h1>
+    <p class="page-subtitle">Equipment: {{ sensor.equipment.equipment_tag }} - {{ sensor.equipment.name }}</p>
+  </div>
+  <a href="{{ url_for('sensors.index', equipment_id=sensor.equipment_id) }}" class="btn btn-secondary">&larr; Back to Sensors</a>
+</div>
+
+<div class="card" style="max-width: 720px;">
+  <form method="POST">
+    <div class="form-row">
+      <div class="form-group" style="flex: 2;">
+        <label class="form-label" for="sensor_name">Channel Description / Label *</label>
+        <input type="text" id="sensor_name" name="sensor_name" class="form-control" value="{{ sensor.sensor_name }}" required>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label class="form-label" for="unit">Engineering Unit *</label>
+        <input type="text" id="unit" name="unit" class="form-control" value="{{ sensor.unit }}" required>
+      </div>
+    </div>
+
+    <div class="card-header" style="margin-top: 1rem;">
+      <h3 class="card-title">&#x1F4CF; Normal Operational Range</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="min_acceptable">Min Acceptable Value</label>
+        <input type="number" step="0.1" id="min_acceptable" name="min_acceptable" class="form-control" value="{{ sensor.min_acceptable }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="max_acceptable">Max Acceptable Value</label>
+        <input type="number" step="0.1" id="max_acceptable" name="max_acceptable" class="form-control" value="{{ sensor.max_acceptable }}" required>
+      </div>
+    </div>
+
+    <div class="card-header" style="margin-top: 1rem;">
+      <h3 class="card-title" style="color: var(--warning);">&#x26A0; Warning Trigger Thresholds</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="warning_min">Warning Min (Optional)</label>
+        <input type="number" step="0.1" id="warning_min" name="warning_min" class="form-control" value="{{ sensor.warning_min if sensor.warning_min is not none else '' }}" placeholder="None">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="warning_max">Warning Max (Optional)</label>
+        <input type="number" step="0.1" id="warning_max" name="warning_max" class="form-control" value="{{ sensor.warning_max if sensor.warning_max is not none else '' }}" placeholder="None">
+      </div>
+    </div>
+
+    <div class="card-header" style="margin-top: 1rem;">
+      <h3 class="card-title" style="color: var(--danger);">&#x2718; Critical Safety Thresholds</h3>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="critical_min">Critical Min (Optional)</label>
+        <input type="number" step="0.1" id="critical_min" name="critical_min" class="form-control" value="{{ sensor.critical_min if sensor.critical_min is not none else '' }}" placeholder="None">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="critical_max">Critical Max (Optional)</label>
+        <input type="number" step="0.1" id="critical_max" name="critical_max" class="form-control" value="{{ sensor.critical_max if sensor.critical_max is not none else '' }}" placeholder="None">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 600;">
+        <input type="checkbox" name="is_enabled" {% if sensor.is_enabled %}checked{% endif %}>
+        Enable threshold monitoring & alert evaluation for this channel
+      </label>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+      <button type="submit" class="btn btn-primary">Save Threshold Limits</button>
+      <a href="{{ url_for('sensors.index', equipment_id=sensor.equipment_id) }}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

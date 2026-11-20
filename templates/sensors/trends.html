@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Telemetry Trends{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">&#x1F4C8; Telemetry History & Trend Analysis</h1>
+    <p class="page-subtitle">Multi-parameter continuous streaming history</p>
+  </div>
+  <a href="{{ url_for('sensors.index') }}" class="btn btn-secondary btn-sm">&larr; Sensor Limits</a>
+</div>
+
+<div class="filter-bar">
+  <span style="font-size: 0.8rem; font-weight: 600;">Filter Stream:</span>
+  <select id="trendArea" class="form-control" style="width: auto;" onchange="loadTrendData()">
+    <option value="">All Plant Areas</option>
+    {% for area in plant_areas %}
+      <option value="{{ area.id }}">{{ area.name }}</option>
+    {% endfor %}
+  </select>
+
+  <select id="trendEquip" class="form-control" style="width: auto;" onchange="loadTrendData()">
+    <option value="">All Equipment</option>
+    {% for eq in equipment_list %}
+      <option value="{{ eq.id }}">{{ eq.equipment_tag }} - {{ eq.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="grid-cols-2">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x1F321; Temperature Gradient (°C)</h3>
+    </div>
+    <div style="height: 250px; position: relative;">
+      <canvas id="tempTrendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x3030; Vibration Velocity (mm/s)</h3>
+    </div>
+    <div style="height: 250px; position: relative;">
+      <canvas id="vibTrendChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="grid-cols-2">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x2693; Process & Header Pressure (bar)</h3>
+    </div>
+    <div style="height: 250px; position: relative;">
+      <canvas id="pressTrendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">&#x26A1; Motor Load Current (A)</h3>
+    </div>
+    <div style="height: 250px; position: relative;">
+      <canvas id="currTrendChart"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let tChart, vChart, pChart, cChart;
+
+  function initTrendCharts() {
+    function makeLine(id, label, color) {
+      return new Chart(document.getElementById(id), {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, borderWidth: 2, pointRadius: 2, fill: false }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { font: { size: 9 } } },
+            y: { ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    tChart = makeLine('tempTrendChart', 'Temperature (°C)', '#dc2626');
+    vChart = makeLine('vibTrendChart', 'Vibration (mm/s)', '#d97706');
+    pChart = makeLine('pressTrendChart', 'Pressure (bar)', '#2563eb');
+    cChart = makeLine('currTrendChart', 'Current (A)', '#7c3aed');
+  }
+
+  async function loadTrendData() {
+    const area = document.getElementById('trendArea').value;
+    const eq = document.getElementById('trendEquip').value;
+    const params = new URLSearchParams();
+    if (area) params.append('plant_area_id', area);
+    if (eq) params.append('equipment_id', eq);
+
+    try {
+      const res = await fetch(`/api/dashboard/charts?${params.toString()}`);
+      if (res.ok) {
+        const d = await res.json();
+        function update(ch, dt) {
+          if (ch && dt) {
+            ch.data.labels = dt.labels;
+            ch.data.datasets[0].data = dt.values;
+            ch.update('none');
+          }
+        }
+        update(tChart, d.temperature_trend);
+        update(vChart, d.vibration_trend);
+        update(pChart, d.pressure_trend);
+        update(cChart, d.current_trend);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initTrendCharts();
+    loadTrendData();
+    setInterval(loadTrendData, 3000);
+  });
+</script>
+{% endblock %}
