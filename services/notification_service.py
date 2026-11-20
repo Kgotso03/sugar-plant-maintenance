@@ -17,6 +17,11 @@ from extensions import db
 from models.notification import NotificationLog
 from models.user import User
 
+try:
+    import notification_config
+except ImportError:
+    notification_config = None
+
 
 class NotificationService:
     @staticmethod
@@ -28,12 +33,16 @@ class NotificationService:
         if not to_email:
             return False, "Recipient email is empty"
 
-        smtp_host = os.environ.get("SMTP_HOST")
-        smtp_user = os.environ.get("SMTP_USER")
-        smtp_password = os.environ.get("SMTP_PASSWORD")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
-        email_from = os.environ.get("EMAIL_FROM", "notifications@sugarplant.local")
+        smtp_host = (getattr(notification_config, "SMTP_HOST", "") or os.environ.get("SMTP_HOST", "")).strip()
+        smtp_user = (getattr(notification_config, "SMTP_USER", "") or os.environ.get("SMTP_USER", "")).strip()
+        smtp_password = (getattr(notification_config, "SMTP_PASSWORD", "") or os.environ.get("SMTP_PASSWORD", "")).strip()
+        smtp_port = int(getattr(notification_config, "SMTP_PORT", 587) or os.environ.get("SMTP_PORT", "587"))
+        raw_tls = getattr(notification_config, "SMTP_USE_TLS", None)
+        if raw_tls is None:
+            smtp_use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
+        else:
+            smtp_use_tls = bool(raw_tls)
+        email_from = (getattr(notification_config, "EMAIL_FROM", "") or os.environ.get("EMAIL_FROM", "notifications@sugarplant.local")).strip()
 
         # Live SMTP dispatch
         if smtp_host and smtp_user and smtp_password:
@@ -79,9 +88,9 @@ class NotificationService:
         if not to_phone:
             return False, "Recipient phone number is empty"
 
-        twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-        twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
-        twilio_from = os.environ.get("TWILIO_PHONE_NUMBER")
+        twilio_sid = (getattr(notification_config, "TWILIO_ACCOUNT_SID", "") or os.environ.get("TWILIO_ACCOUNT_SID", "")).strip()
+        twilio_token = (getattr(notification_config, "TWILIO_AUTH_TOKEN", "") or os.environ.get("TWILIO_AUTH_TOKEN", "")).strip()
+        twilio_from = (getattr(notification_config, "TWILIO_PHONE_NUMBER", "") or os.environ.get("TWILIO_PHONE_NUMBER", "")).strip()
 
         if twilio_sid and twilio_token and twilio_from:
             try:
