@@ -1,7 +1,7 @@
 {
   "model_type": "Random Forest Classifier",
   "model_version": "RandomForest-v1.0",
-  "training_timestamp": "2026-11-20T14:41:08.841112+00:00",
+  "training_timestamp": "2026-11-20T15:20:47.889978+00:00",
   "n_samples_total": 300,
   "n_train": 225,
   "n_test": 75,

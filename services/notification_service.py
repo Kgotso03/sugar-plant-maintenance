@@ -13,6 +13,7 @@ import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone
+from flask import current_app, has_app_context
 from extensions import db
 from models.notification import NotificationLog
 from models.user import User
@@ -33,23 +34,56 @@ class NotificationService:
         if not to_email:
             return False, "Recipient email is empty"
 
-        smtp_host = (getattr(notification_config, "SMTP_HOST", "") or os.environ.get("SMTP_HOST", "")).strip()
-        smtp_user = (getattr(notification_config, "SMTP_USER", "") or os.environ.get("SMTP_USER", "")).strip()
-        smtp_password = (getattr(notification_config, "SMTP_PASSWORD", "") or os.environ.get("SMTP_PASSWORD", "")).strip()
-        smtp_port = int(getattr(notification_config, "SMTP_PORT", 587) or os.environ.get("SMTP_PORT", "587"))
+        smtp_host = (
+            getattr(notification_config, "SMTP_HOST", "")
+            or os.environ.get("SMTP_HOST", "")
+            or "smtp.gmail.com"
+        ).strip()
+
+        smtp_user = (
+            getattr(notification_config, "SMTP_USER", "")
+            or os.environ.get("SMTP_USER", "")
+            or "bongiwepatriciasimelane@gmail.com"
+        ).strip()
+
+        smtp_password = (
+            getattr(notification_config, "SMTP_PASSWORD", "")
+            or os.environ.get("SMTP_PASSWORD", "")
+            or "hlcuyisefwxtcbtu"
+        ).strip()
+
+        try:
+            smtp_port = int(getattr(notification_config, "SMTP_PORT", None) or os.environ.get("SMTP_PORT", 587))
+        except (ValueError, TypeError):
+            smtp_port = 587
+
         raw_tls = getattr(notification_config, "SMTP_USE_TLS", None)
         if raw_tls is None:
             smtp_use_tls = os.environ.get("SMTP_USE_TLS", "true").lower() in ("true", "1", "yes")
         else:
             smtp_use_tls = bool(raw_tls)
-        email_from = (getattr(notification_config, "EMAIL_FROM", "") or os.environ.get("EMAIL_FROM", "notifications@sugarplant.local")).strip()
+
+        raw_from = (
+            getattr(notification_config, "EMAIL_FROM", "")
+            or os.environ.get("EMAIL_FROM", "")
+            or "SugarPlant Maintenance"
+        ).strip()
+
+        # Build RFC-compliant From header and SMTP envelope sender
+        if "@" in raw_from:
+            display_from = raw_from
+            sender_addr = smtp_user or raw_from
+        else:
+            display_from = f"{raw_from} <{smtp_user}>" if smtp_user else raw_from
+            sender_addr = smtp_user
 
         # Live SMTP dispatch
-        if smtp_host and smtp_user and smtp_password:
+        is_testing = has_app_context() and current_app.config.get("TESTING", False)
+        if smtp_host and smtp_user and smtp_password and not is_testing:
             try:
                 msg = MIMEMultipart("alternative")
                 msg["Subject"] = subject
-                msg["From"] = email_from
+                msg["From"] = display_from
                 msg["To"] = to_email
 
                 part1 = MIMEText(text_body, "plain", "utf-8")
@@ -59,11 +93,11 @@ class NotificationService:
                     part2 = MIMEText(html_body, "html", "utf-8")
                     msg.attach(part2)
 
-                server = smtplib.SMTP(smtp_host, smtp_port, timeout=6)
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
                 if smtp_use_tls:
                     server.starttls()
                 server.login(smtp_user, smtp_password)
-                server.sendmail(email_from, [to_email], msg.as_string())
+                server.sendmail(sender_addr, [to_email], msg.as_string())
                 server.quit()
                 return True, "Email sent successfully via SMTP"
             except Exception as e:
@@ -92,7 +126,8 @@ class NotificationService:
         twilio_token = (getattr(notification_config, "TWILIO_AUTH_TOKEN", "") or os.environ.get("TWILIO_AUTH_TOKEN", "")).strip()
         twilio_from = (getattr(notification_config, "TWILIO_PHONE_NUMBER", "") or os.environ.get("TWILIO_PHONE_NUMBER", "")).strip()
 
-        if twilio_sid and twilio_token and twilio_from:
+        is_testing = has_app_context() and current_app.config.get("TESTING", False)
+        if twilio_sid and twilio_token and twilio_from and not is_testing:
             try:
                 url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
                 data = urllib.parse.urlencode({
@@ -143,6 +178,8 @@ class NotificationService:
         send_email = user.email_notifications if force_channels is None else (NotificationLog.CHANNEL_EMAIL in force_channels)
         if send_email and user.email:
             ok, status_msg = cls.send_email(user.email, title, message)
+            log_status = NotificationLog.STATUS_SENT if ok else NotificationLog.STATUS_FAILED
+            err = status_msg if not ok else None
             log = NotificationLog(
                 user_id=user.id,
                 recipient_email=user.email,
@@ -151,8 +188,8 @@ class NotificationService:
                 category=category,
                 title=title,
                 message=message,
-                status=NotificationLog.STATUS_SENT if ok else NotificationLog.STATUS_FAILED,
-                error_message=status_msg if not ok else None,
+                status=log_status,
+                error_message=err,
                 is_read=False,
             )
             db.session.add(log)
@@ -165,6 +202,8 @@ class NotificationService:
             if len(sms_text) > 160:
                 sms_text = sms_text[:157] + "..."
             ok, status_msg = cls.send_sms(user.phone_number, sms_text)
+            log_status = NotificationLog.STATUS_SENT if ok else NotificationLog.STATUS_FAILED
+            err = status_msg if not ok else None
             log = NotificationLog(
                 user_id=user.id,
                 recipient_email=None,
@@ -173,8 +212,8 @@ class NotificationService:
                 category=category,
                 title=title,
                 message=sms_text,
-                status=NotificationLog.STATUS_SENT if ok else NotificationLog.STATUS_FAILED,
-                error_message=status_msg if not ok else None,
+                status=log_status,
+                error_message=err,
                 is_read=False,
             )
             db.session.add(log)
