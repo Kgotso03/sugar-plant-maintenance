@@ -1,32 +1,93 @@
 {% extends "base.html" %}
 
-{% block title %}User Profile{% endblock %}
+{% block title %}My Profile{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1 class="page-title">&#x1F464; User Profile</h1>
-    <p class="page-subtitle">Your system account and security privileges</p>
+    <h1 class="page-title">&#x1F464; My Profile &amp; Notification Settings</h1>
+    <p class="page-subtitle">Manage your contact details, password, and alert preferences</p>
   </div>
 </div>
 
-<div class="card" style="max-width: 600px;">
-  <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-    <div class="user-avatar" style="width: 60px; height: 60px; font-size: 1.5rem; background: var(--primary);">
-      {{ user.username[0]|upper }}
+<div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:flex-start;">
+
+  <!-- Identity Card (read-only) -->
+  <div class="card" style="flex:0 0 260px;min-width:220px;">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
+      <div class="user-avatar" style="width:56px;height:56px;font-size:1.4rem;background:var(--primary);">
+        {{ user.username[0]|upper }}
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:1.05rem;color:var(--navy-dark);">{{ user.full_name or user.username }}</div>
+        <span class="badge badge-normal">{{ user.role|replace('_', ' ')|title }}</span>
+      </div>
     </div>
-    <div>
-      <h2 style="font-size: 1.2rem; color: var(--navy-dark);">{{ user.full_name or user.username }}</h2>
-      <span class="badge badge-normal">{{ user.role|replace('_', ' ')|title }}</span>
+    <div style="font-size:0.88rem;line-height:2.1;border-top:1px solid var(--border-light);padding-top:1rem;">
+      <div><span style="color:var(--text-muted);">Username:</span> <strong>{{ user.username }}</strong></div>
+      <div><span style="color:var(--text-muted);">Email:</span> <strong>{{ user.email }}</strong></div>
+      <div><span style="color:var(--text-muted);">Phone:</span> <strong>{{ user.phone_number or '— not set —' }}</strong></div>
+      <div><span style="color:var(--text-muted);">Status:</span> <span class="badge badge-normal">Active</span></div>
+      <div><span style="color:var(--text-muted);">Member Since:</span> <span>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</span></div>
+    </div>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-light);">
+      <div style="font-size:0.8rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem;">Active Channels</div>
+      <div style="font-size:0.88rem;display:flex;flex-direction:column;gap:0.3rem;">
+        <span>&#x1F4E7; Email: <strong style="color:{% if user.email_notifications %}var(--success){% else %}var(--danger){% endif %};">{{ 'ON' if user.email_notifications else 'OFF' }}</strong></span>
+        <span>&#x1F4F1; SMS: <strong style="color:{% if user.sms_notifications %}var(--success){% else %}var(--danger){% endif %};">{{ 'ON' if user.sms_notifications else 'OFF' }}</strong></span>
+      </div>
     </div>
   </div>
 
-  <div style="font-size: 0.9rem; line-height: 2; border-top: 1px solid var(--border-light); padding-top: 1rem;">
-    <div><span style="color:var(--text-muted);">Username:</span> <strong>{{ user.username }}</strong></div>
-    <div><span style="color:var(--text-muted);">Email:</span> <strong>{{ user.email }}</strong></div>
-    <div><span style="color:var(--text-muted);">Status:</span> <span class="badge badge-normal">Active</span></div>
-    <div><span style="color:var(--text-muted);">Member Since:</span> <span>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</span></div>
+  <!-- Edit Form -->
+  <div class="card" style="flex:1;min-width:280px;max-width:520px;">
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:1.2rem;color:var(--navy-dark);">&#x270F; Update Settings</h3>
+    <form method="POST">
+
+      <div class="form-group">
+        <label class="form-label" for="full_name">Full Name</label>
+        <input type="text" id="full_name" name="full_name" class="form-control"
+               placeholder="e.g. John Doe" value="{{ user.full_name or '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="phone_number">Phone Number (SMS Alerts)</label>
+        <input type="tel" id="phone_number" name="phone_number" class="form-control"
+               placeholder="+27821234567" value="{{ user.phone_number or '' }}">
+        <small style="color:var(--text-muted);font-size:0.78rem;">Include country code. Required to receive SMS notifications.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notification Channels</label>
+        <div style="display:flex;flex-direction:column;gap:0.55rem;margin-top:0.4rem;">
+          <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:500;">
+            <input type="checkbox" name="email_notifications" value="on"
+                   {% if user.email_notifications %}checked{% endif %}>
+            <span>&#x1F4E7; Email Notifications</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;font-weight:500;">
+            <input type="checkbox" name="sms_notifications" value="on"
+                   {% if user.sms_notifications %}checked{% endif %}>
+            <span>&#x1F4F1; SMS Notifications</span>
+          </label>
+        </div>
+        <small style="color:var(--text-muted);font-size:0.78rem;">
+          Receive work orders, fault alerts, PM reminders, and account events via selected channels.
+        </small>
+      </div>
+
+      <div class="form-group" style="border-top:1px solid var(--border-light);padding-top:1rem;margin-top:0.5rem;">
+        <label class="form-label" for="new_password">New Password <span style="font-weight:400;color:var(--text-muted);">(optional — leave blank to keep current)</span></label>
+        <input type="password" id="new_password" name="new_password" class="form-control"
+               placeholder="Enter new password to change">
+      </div>
+
+      <div style="display:flex;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">&#x2714; Save Profile</button>
+        <a href="{{ url_for('notifications.index') }}" class="btn btn-secondary">&#x1F514; Notification Centre</a>
+      </div>
+    </form>
   </div>
+
 </div>
 {% endblock %}
-

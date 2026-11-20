@@ -270,6 +270,14 @@ def create_schedule():
     )
     db.session.add(sched)
     db.session.commit()
+
+    if assigned_to_id:
+        try:
+            from services.notification_service import notification_service
+            notification_service.notify_pm_schedule_due(sched)
+        except Exception as e:
+            print(f"[NOTIFICATION ERROR] {e}")
+
     log_action("CREATE_SCHEDULE", "MaintenanceSchedule", sched.id, f"Created schedule '{title}'")
     flash("Preventive maintenance schedule created.", "success")
     return redirect(url_for("maintenance.schedules"))

@@ -102,6 +102,13 @@
         {% endif %}
 
         <div class="nav-section-title">System</div>
+        <a href="{{ url_for('notifications.index') }}" class="nav-item {% if request.endpoint and 'notifications' in request.endpoint %}active{% endif %}">
+          <span class="nav-icon">&#x1F514;</span>
+          <span>Notifications</span>
+          {% if current_user %}
+          <span id="sidebar-notif-badge" style="display:none;background:var(--danger);color:#fff;border-radius:9px;font-size:0.68rem;font-weight:700;padding:1px 6px;margin-left:auto;min-width:18px;text-align:center;"></span>
+          {% endif %}
+        </a>
         <a href="{{ url_for('settings.index') }}" class="nav-item {% if 'settings' in request.endpoint %}active{% endif %}">
           <span class="nav-icon">&#x2699;</span>
           <span>Settings & Audit</span>
@@ -163,6 +170,13 @@
           <a href="{{ url_for('simulation.index') }}" class="btn btn-sm btn-secondary top-nav-studio-btn">
             <span>&#x2699; Studio</span>
           </a>
+          <!-- Notification Bell -->
+          {% if current_user %}
+          <a href="{{ url_for('notifications.index') }}" class="btn btn-sm btn-secondary" title="Notification Centre" style="position:relative;padding:0.3rem 0.6rem;">
+            &#x1F514;
+            <span id="notif-bell-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;font-size:0.65rem;font-weight:700;width:17px;height:17px;line-height:17px;text-align:center;"></span>
+          </a>
+          {% endif %}
         </div>
       </header>
 
@@ -185,6 +199,32 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% if current_user %}
+  <script>
+    function refreshNotifBadges() {
+      fetch("{{ url_for('notifications.api_unread_count') }}")
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          var count = data.unread_count || 0;
+          var bell = document.getElementById("notif-bell-badge");
+          var side = document.getElementById("sidebar-notif-badge");
+          if (bell) {
+            bell.style.display = count > 0 ? "inline-block" : "none";
+            bell.textContent = count > 99 ? "99+" : count;
+          }
+          if (side) {
+            side.style.display = count > 0 ? "inline-block" : "none";
+            side.textContent = count > 99 ? "99+" : count;
+          }
+        })
+        .catch(function() {});
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      refreshNotifBadges();
+      setInterval(refreshNotifBadges, 30000);
+    });
+  </script>
+  {% endif %}
   {% block scripts %}{% endblock %}
 </body>
 </html>

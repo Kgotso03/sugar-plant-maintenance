@@ -53,8 +53,30 @@ def logout():
     return redirect(url_for("auth.login"))
 
 
-@auth_bp.route("/profile")
+@auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
     user = get_current_user()
+    if request.method == "POST":
+        from extensions import db
+        full_name = request.form.get("full_name", "").strip()
+        phone_number = request.form.get("phone_number", "").strip() or None
+        email_notif = request.form.get("email_notifications") == "on"
+        sms_notif = request.form.get("sms_notifications") == "on"
+        new_password = request.form.get("new_password", "").strip()
+
+        user.full_name = full_name
+        user.phone_number = phone_number
+        user.email_notifications = email_notif
+        user.sms_notifications = sms_notif
+
+        if new_password:
+            user.set_password(new_password)
+            flash("Your password has been changed successfully.", "info")
+
+        db.session.commit()
+        log_action("UPDATE_PROFILE", "User", user.id, f"User {user.username} updated profile and notification preferences")
+        flash("Profile and communication settings saved successfully.", "success")
+        return redirect(url_for("auth.profile"))
+
     return render_template("auth/profile.html", user=user)

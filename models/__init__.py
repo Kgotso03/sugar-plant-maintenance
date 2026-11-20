@@ -8,6 +8,7 @@ from models.alert import FaultAlert
 from models.prediction import FailurePrediction
 from models.maintenance import WorkOrder, MaintenanceRecord, MaintenanceSchedule
 from models.audit import AuditLog
+from models.notification import NotificationLog
 
 __all__ = [
     "db",
@@ -23,4 +24,5 @@ __all__ = [
     "MaintenanceRecord",
     "MaintenanceSchedule",
     "AuditLog",
+    "NotificationLog",
 ]

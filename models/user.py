@@ -16,6 +16,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    phone_number = db.Column(db.String(30), nullable=True)
+    email_notifications = db.Column(db.Boolean, default=True, nullable=False)
+    sms_notifications = db.Column(db.Boolean, default=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(30), nullable=False, default=ROLE_TECHNICIAN)
     full_name = db.Column(db.String(120), nullable=True)
@@ -27,6 +30,8 @@ class User(db.Model):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+    notifications = db.relationship("NotificationLog", back_populates="user", cascade="all, delete-orphan")
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
@@ -48,6 +53,9 @@ class User(db.Model):
             "id": self.id,
             "username": self.username,
             "email": self.email,
+            "phone_number": self.phone_number,
+            "email_notifications": self.email_notifications,
+            "sms_notifications": self.sms_notifications,
             "role": self.role,
             "full_name": self.full_name,
             "is_active": self.is_active,

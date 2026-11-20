@@ -101,10 +101,19 @@ class ThresholdEngine:
                 # Deduplicate: update existing active alert rather than flooding the table
                 existing_alert.observed_value = value
                 existing_alert.last_occurred_at = recorded_at
+                was_escalated = False
                 if status == SensorReading.STATUS_CRITICAL and existing_alert.severity != FaultAlert.SEVERITY_CRITICAL:
                     existing_alert.severity = FaultAlert.SEVERITY_CRITICAL
                     existing_alert.description = desc
+                    was_escalated = True
                 alert = existing_alert
+
+                if was_escalated:
+                    try:
+                        from services.notification_service import notification_service
+                        notification_service.notify_fault_alert(alert, escalated=True)
+                    except Exception as notif_err:
+                        pass
             else:
                 # New alert instance
                 alert = FaultAlert(
@@ -122,5 +131,11 @@ class ThresholdEngine:
                 )
                 db.session.add(alert)
                 db.session.flush()
+
+                try:
+                    from services.notification_service import notification_service
+                    notification_service.notify_fault_alert(alert, escalated=False)
+                except Exception as notif_err:
+                    pass
 
         return reading, alert

@@ -6,6 +6,7 @@ from extensions import db
 from models.user import User
 from services.auth_service import login_required, roles_required, get_current_user
 from services.audit_service import log_action
+from services.notification_service import notification_service
 
 users_bp = Blueprint("users", __name__)
 
@@ -25,6 +26,9 @@ def create():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
+        phone_number = request.form.get("phone_number", "").strip() or None
+        email_notif = request.form.get("email_notifications") == "on"
+        sms_notif = request.form.get("sms_notifications") == "on"
         full_name = request.form.get("full_name", "").strip()
         role = request.form.get("role", User.ROLE_TECHNICIAN)
         password = request.form.get("password", "")
@@ -40,6 +44,9 @@ def create():
         user = User(
             username=username,
             email=email,
+            phone_number=phone_number,
+            email_notifications=email_notif,
+            sms_notifications=sms_notif,
             full_name=full_name,
             role=role,
             is_active=True,
@@ -48,8 +55,16 @@ def create():
         db.session.add(user)
         db.session.commit()
 
+        # Dispatch login credentials via enabled notification channels
+        try:
+            notification_service.notify_user_account_created(
+                user, password, url_for("auth.login", _external=True)
+            )
+        except Exception as e:
+            print(f"[NOTIFICATION ERROR] {e}")
+
         log_action("CREATE_USER", "User", user.id, f"Created user {user.username} with role {user.role}")
-        flash(f"User '{user.username}' created successfully.", "success")
+        flash(f"User '{user.username}' created successfully and access credentials dispatched.", "success")
         return redirect(url_for("users.index"))
 
     return render_template("users/form.html", user=None, roles=User.ALL_ROLES)
@@ -63,6 +78,9 @@ def edit(user_id):
 
     if request.method == "POST":
         email = request.form.get("email", "").strip()
+        phone_number = request.form.get("phone_number", "").strip() or None
+        email_notif = request.form.get("email_notifications") == "on"
+        sms_notif = request.form.get("sms_notifications") == "on"
         full_name = request.form.get("full_name", "").strip()
         role = request.form.get("role", user.role)
         new_password = request.form.get("password", "").strip()
@@ -85,13 +103,22 @@ def edit(user_id):
                 return render_template("users/form.html", user=user, roles=User.ALL_ROLES)
 
         user.email = email
+        user.phone_number = phone_number
+        user.email_notifications = email_notif
+        user.sms_notifications = sms_notif
         user.full_name = full_name
         user.role = role
         user.is_active = (is_active_val == "1")
 
         if new_password:
             user.set_password(new_password)
-            flash("Password updated successfully.", "info")
+            try:
+                notification_service.notify_user_password_changed(
+                    user, new_password, url_for("auth.login", _external=True)
+                )
+            except Exception as e:
+                print(f"[NOTIFICATION ERROR] {e}")
+            flash("Password updated successfully and notification dispatched.", "info")
 
         db.session.commit()
         log_action("EDIT_USER", "User", user.id, f"Updated user {user.username}")

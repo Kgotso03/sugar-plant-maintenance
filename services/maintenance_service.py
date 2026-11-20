@@ -8,6 +8,7 @@ from models.maintenance import WorkOrder, MaintenanceRecord, MaintenanceSchedule
 from models.alert import FaultAlert
 from models.equipment import Equipment
 from services.audit_service import log_action
+from services.notification_service import notification_service
 
 
 def generate_work_order_number() -> str:
@@ -57,6 +58,13 @@ def create_work_order(
     db.session.add(wo)
     db.session.commit()
 
+    # Dispatch notification to assigned technician
+    if assigned_to_id:
+        try:
+            notification_service.notify_work_order_assigned(wo)
+        except Exception as e:
+            print(f"[NOTIFICATION ERROR] {e}")
+
     log_action("CREATE_WORK_ORDER", "WorkOrder", wo.id, f"Created Work Order {wo.work_order_number}")
     return wo
 
@@ -75,6 +83,8 @@ def update_work_order(
     maintenance_cost: float = None,
 ) -> WorkOrder:
     wo = WorkOrder.query.get_or_404(work_order_id)
+    old_status = wo.status
+    old_assigned_to_id = wo.assigned_to_id
 
     if status and status in WorkOrder.STATUSES:
         wo.status = status
@@ -96,6 +106,21 @@ def update_work_order(
         wo.maintenance_cost = float(maintenance_cost)
 
     db.session.commit()
+
+    # Dispatch notification if assignment changed
+    if assigned_to_id is not None and assigned_to_id > 0 and assigned_to_id != old_assigned_to_id:
+        try:
+            notification_service.notify_work_order_assigned(wo)
+        except Exception as e:
+            print(f"[NOTIFICATION ERROR] {e}")
+
+    # Dispatch notification if status changed
+    if status and status != old_status:
+        try:
+            notification_service.notify_work_order_status(wo, old_status, wo.status)
+        except Exception as e:
+            print(f"[NOTIFICATION ERROR] {e}")
+
     log_action("UPDATE_WORK_ORDER", "WorkOrder", wo.id, f"Updated Work Order {wo.work_order_number}")
     return wo
 
@@ -113,6 +138,7 @@ def complete_work_order(
     resolve_linked_alert: bool = True,
 ) -> WorkOrder:
     wo = WorkOrder.query.get_or_404(work_order_id)
+    old_status = wo.status
     now = datetime.now(timezone.utc)
 
     wo.status = WorkOrder.STATUS_COMPLETED
@@ -156,6 +182,13 @@ def complete_work_order(
             alert.comments = (alert.comments or "") + f"\nResolved via completed Work Order {wo.work_order_number}."
 
     db.session.commit()
+
+    # Dispatch notification on completion
+    try:
+        notification_service.notify_work_order_status(wo, old_status, WorkOrder.STATUS_COMPLETED)
+    except Exception as e:
+        print(f"[NOTIFICATION ERROR] {e}")
+
     log_action("COMPLETE_WORK_ORDER", "WorkOrder", wo.id, f"Completed Work Order {wo.work_order_number}")
     return wo
 
