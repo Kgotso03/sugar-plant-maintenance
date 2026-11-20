@@ -506,6 +506,158 @@ body {
   word-break: break-word;
 }
 
+/* ── Modern Dashboard KPI Grid (Compact Square Metric Tiles) ─────────────── */
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-square {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #e2e8f0);
+  border-radius: var(--radius-lg, 14px);
+  padding: 0.95rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 124px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-square:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  border-color: #cbd5e1;
+}
+
+.kpi-square::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.kpi-square.kpi-blue::before { background: #2563eb; }
+.kpi-square.kpi-green::before { background: #10b981; }
+.kpi-square.kpi-amber::before { background: #f59e0b; }
+.kpi-square.kpi-red::before { background: #ef4444; }
+.kpi-square.kpi-purple::before { background: #a855f7; }
+.kpi-square.kpi-cyan::before { background: #06b6d4; }
+.kpi-square.kpi-rose::before { background: #f43f5e; }
+.kpi-square.kpi-slate::before { background: #64748b; }
+
+.kpi-square-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.kpi-blue .kpi-icon-box { background: #eff6ff; color: #2563eb; }
+.kpi-green .kpi-icon-box { background: #ecfdf5; color: #10b981; }
+.kpi-amber .kpi-icon-box { background: #fffbeb; color: #f59e0b; }
+.kpi-red .kpi-icon-box { background: #fef2f2; color: #ef4444; }
+.kpi-purple .kpi-icon-box { background: #faf5ff; color: #a855f7; }
+.kpi-cyan .kpi-icon-box { background: #ecfeff; color: #06b6d4; }
+.kpi-rose .kpi-icon-box { background: #fff1f2; color: #f43f5e; }
+.kpi-slate .kpi-icon-box { background: #f1f5f9; color: #64748b; }
+
+.kpi-chip {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.kpi-blue .kpi-chip { color: #2563eb; background: #eff6ff; }
+.kpi-green .kpi-chip { color: #059669; background: #ecfdf5; }
+.kpi-amber .kpi-chip { color: #d97706; background: #fffbeb; }
+.kpi-red .kpi-chip { color: #dc2626; background: #fef2f2; }
+.kpi-purple .kpi-chip { color: #9333ea; background: #faf5ff; }
+.kpi-cyan .kpi-chip { color: #0891b2; background: #ecfeff; }
+.kpi-rose .kpi-chip { color: #e11d48; background: #fff1f2; }
+.kpi-slate .kpi-chip { color: #475569; background: #f1f5f9; }
+
+.kpi-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-num {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.2rem;
+}
+
+.kpi-text {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+/* Compact Filter Bar */
+.filter-bar-compact {
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.filter-controls-row {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.filter-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--navy-dark, #0f172a);
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.filter-select {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+}
+
 /* Status Badges */
 .badge {
   display: inline-flex;
@@ -804,6 +956,45 @@ body {
   }
 
   /* Responsive Grids */
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.55rem !important;
+    margin-bottom: 1rem;
+  }
+
+  .kpi-square {
+    min-height: 106px;
+    padding: 0.75rem 0.65rem;
+    border-radius: 12px;
+  }
+
+  .kpi-icon-box {
+    width: 30px;
+    height: 30px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+  }
+
+  .kpi-chip {
+    font-size: 0.58rem;
+    padding: 1px 5px;
+  }
+
+  .kpi-num {
+    font-size: 1.55rem;
+    margin-bottom: 0.15rem;
+  }
+
+  .kpi-text {
+    font-size: 0.64rem;
+    line-height: 1.2;
+  }
+
+  .filter-controls-row {
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
   .grid-cols-4 {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.65rem;
@@ -1000,8 +1191,37 @@ body {
 
 /* ── Extra Small Mobile Phones (<= 360px) ────────────────────────────────── */
 @media (max-width: 360px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.45rem !important;
+  }
+
+  .kpi-square {
+    min-height: 98px;
+    padding: 0.6rem 0.5rem;
+    border-radius: 10px;
+  }
+
+  .kpi-icon-box {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+  }
+
+  .kpi-chip {
+    display: none;
+  }
+
+  .kpi-num {
+    font-size: 1.35rem;
+  }
+
+  .kpi-text {
+    font-size: 0.58rem;
+  }
+
   .grid-cols-4 {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.45rem;
   }
 

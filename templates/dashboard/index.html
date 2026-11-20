@@ -19,88 +19,125 @@
 </div>
 
 <!-- Filters -->
-<div class="filter-bar">
-  <span style="font-size: 0.8rem; font-weight: 600; color: var(--navy-dark);">&#x1F50D; Filter View:</span>
-  <select id="filterPlantArea" class="form-control" style="width: auto; min-width: 220px;" onchange="fetchDashboardData()">
-    <option value="">All Plant Areas</option>
-    {% for area in plant_areas %}
-      <option value="{{ area.id }}">{{ area.name }}</option>
-    {% endfor %}
-  </select>
-
-  <select id="filterEquipment" class="form-control" style="width: auto; min-width: 220px;" onchange="fetchDashboardData()">
-    <option value="">All Equipment</option>
-    {% for eq in equipment_list %}
-      <option value="{{ eq.id }}">{{ eq.equipment_tag }} - {{ eq.name }}</option>
-    {% endfor %}
-  </select>
-</div>
-
-<!-- Top Metrics KPI Cards -->
-<div class="grid-cols-4">
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: #eff6ff; color: #2563eb;">&#x2699;</div>
-    <div>
-      <div class="stat-value" id="statTotalEquipment">-</div>
-      <div class="stat-label">Registered Assets</div>
+<div class="filter-bar filter-bar-compact">
+  <div class="filter-controls-row">
+    <div class="filter-item">
+      <label class="filter-label" for="filterPlantArea">&#x1F3ED; Plant Area</label>
+      <select id="filterPlantArea" class="form-control filter-select" onchange="fetchDashboardData()">
+        <option value="">All Plant Areas</option>
+        {% for area in plant_areas %}
+          <option value="{{ area.id }}">{{ area.name }}</option>
+        {% endfor %}
+      </select>
     </div>
-  </div>
 
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: var(--success-bg); color: var(--success);">&#x2714;</div>
-    <div>
-      <div class="stat-value" id="statNormal">-</div>
-      <div class="stat-label">Operating Normally</div>
-    </div>
-  </div>
-
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: var(--warning-bg); color: var(--warning);">&#x26A0;</div>
-    <div>
-      <div class="stat-value" id="statWarning">-</div>
-      <div class="stat-label">Warning Condition</div>
-    </div>
-  </div>
-
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: var(--danger-bg); color: var(--danger);">&#x2718;</div>
-    <div>
-      <div class="stat-value" id="statCritical">-</div>
-      <div class="stat-label">Critical Alerts</div>
+    <div class="filter-item">
+      <label class="filter-label" for="filterEquipment">&#x2699; Asset Tag</label>
+      <select id="filterEquipment" class="form-control filter-select" onchange="fetchDashboardData()">
+        <option value="">All Equipment</option>
+        {% for eq in equipment_list %}
+          <option value="{{ eq.id }}">{{ eq.equipment_tag }} - {{ eq.name }}</option>
+        {% endfor %}
+      </select>
     </div>
   </div>
 </div>
 
-<div class="grid-cols-4" style="margin-top: -0.5rem;">
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: #fdf2f8; color: #db2777;">&#x1F9E0;</div>
-    <div>
-      <div class="stat-value" id="statHighRisk">-</div>
-      <div class="stat-label">ML High Risk Assets</div>
+<!-- Top Metrics KPI Cards (Professional Square Tiles) -->
+<div class="dashboard-kpi-grid">
+  <!-- 1. Registered Assets -->
+  <div class="kpi-square kpi-blue">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x2699;</div>
+      <span class="kpi-chip">Asset</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statTotalEquipment">-</div>
+      <div class="kpi-text">Registered Assets</div>
     </div>
   </div>
 
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: var(--info-bg); color: var(--info);">&#x1F6E0;</div>
-    <div>
-      <div class="stat-value" id="statOpenWO">-</div>
-      <div class="stat-label">Active Work Orders</div>
+  <!-- 2. Operating Normally -->
+  <div class="kpi-square kpi-green">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x2714;</div>
+      <span class="kpi-chip">Normal</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statNormal">-</div>
+      <div class="kpi-text">Operating Normally</div>
     </div>
   </div>
 
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: #fef2f2; color: #dc2626;">&#x23F0;</div>
-    <div>
-      <div class="stat-value" id="statOverdueTasks">-</div>
-      <div class="stat-label">Overdue PM Tasks</div>
+  <!-- 3. Warning Condition -->
+  <div class="kpi-square kpi-amber">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x26A0;</div>
+      <span class="kpi-chip">Warning</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statWarning">-</div>
+      <div class="kpi-text">Warning Condition</div>
     </div>
   </div>
 
-  <div class="card stat-card">
-    <div class="stat-icon" style="background-color: #f8fafc; color: #475569;">&#x1F514;</div>
-    <div>
-      <div class="stat-value" id="statActiveAlerts">-</div>
-      <div class="stat-label">Unresolved Alerts</div>
+  <!-- 4. Critical Alerts -->
+  <div class="kpi-square kpi-red">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x2718;</div>
+      <span class="kpi-chip">Critical</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statCritical">-</div>
+      <div class="kpi-text">Critical Alerts</div>
+    </div>
+  </div>
+
+  <!-- 5. ML High Risk Assets -->
+  <div class="kpi-square kpi-purple">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x1F9E0;</div>
+      <span class="kpi-chip">AI Risk</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statHighRisk">-</div>
+      <div class="kpi-text">ML High Risk Assets</div>
+    </div>
+  </div>
+
+  <!-- 6. Active Work Orders -->
+  <div class="kpi-square kpi-cyan">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x1F6E0;</div>
+      <span class="kpi-chip">Orders</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statOpenWO">-</div>
+      <div class="kpi-text">Active Work Orders</div>
+    </div>
+  </div>
+
+  <!-- 7. Overdue PM Tasks -->
+  <div class="kpi-square kpi-rose">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x23F0;</div>
+      <span class="kpi-chip">Overdue</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statOverdueTasks">-</div>
+      <div class="kpi-text">Overdue PM Tasks</div>
+    </div>
+  </div>
+
+  <!-- 8. Unresolved Alerts -->
+  <div class="kpi-square kpi-slate">
+    <div class="kpi-square-top">
+      <div class="kpi-icon-box">&#x1F514;</div>
+      <span class="kpi-chip">Unresolved</span>
+    </div>
+    <div class="kpi-main">
+      <div class="kpi-num" id="statActiveAlerts">-</div>
+      <div class="kpi-text">Unresolved Alerts</div>
     </div>
   </div>
 </div>
